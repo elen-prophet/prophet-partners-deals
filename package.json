@@ -1,0 +1,11 @@
+{
+  "name": "prophet-partners-deals",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "wrangler pages dev public --d1 DB --binding DEALS_PASSWORD=test ADMIN_PASSWORD=adm COOKIE_SECRET=x"
+  },
+  "devDependencies": {
+    "wrangler": "^3.114.17"
+  },
+  "private": true
+}

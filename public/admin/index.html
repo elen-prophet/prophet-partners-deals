@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>deals admin | prophet.partners</title>
+<style>
+:root{--ink:#000;--ink2:#2b2b2b;--muted:#767676;--line:#e3e3e3;--bg:#fff;--red:#ff0000;--sel:#fff3f3}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.4 "Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.top{display:flex;align-items:center;gap:18px;padding:14px 20px;border-bottom:2px solid var(--ink);flex-wrap:wrap}
+.top h1{font-weight:700;font-size:17px;letter-spacing:-.01em;margin:0}
+.top h1 span{color:var(--red)} .top h1 small{color:var(--muted);font-weight:400;font-size:17px}
+.tabs{display:flex;border:1px solid var(--ink)}
+.tabs button{border:0;background:#fff;padding:6px 12px;font:inherit;cursor:pointer}
+.tabs button+button{border-left:1px solid var(--ink)}
+.tabs button[aria-pressed=true]{background:var(--ink);color:#fff}
+.top .right{margin-left:auto;display:flex;gap:16px;align-items:center;color:var(--muted)}
+.top .right a{text-decoration:none}.top .right a:hover{color:var(--red)}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 20px}
+input,select,textarea{font:inherit;color:var(--ink)}
+.bar input,.bar select{border:1px solid var(--line);padding:6px 8px;background:#fff;border-radius:0}
+.btn{border:1px solid var(--ink);background:#fff;padding:6px 11px;font:inherit;cursor:pointer;white-space:nowrap}
+.btn:hover:not(:disabled){background:var(--red);border-color:var(--red);color:#fff}
+.btn.primary{background:var(--ink);color:#fff}
+.btn:disabled{opacity:.35;cursor:default}
+.count{color:var(--muted);margin-left:auto}
+#status{min-width:70px;color:var(--muted);text-align:right}
+#status.err{color:var(--red)}
+
+.wrap{overflow:auto;height:calc(100vh - 112px);border-top:1px solid var(--line)}
+table{border-collapse:separate;border-spacing:0;min-width:2310px}
+th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:0;vertical-align:top;background:#fff}
+th{position:sticky;top:0;z-index:2;background:#fafafa;font-size:11px;font-weight:500;color:var(--muted);text-align:left;padding:7px 8px;white-space:nowrap;text-transform:lowercase}
+th.priv{color:var(--red)}
+.stick1{position:sticky;left:0;z-index:1}
+.stick2{position:sticky;left:34px;z-index:1}
+.stick3{position:sticky;left:96px;z-index:1;box-shadow:1px 0 0 #bbb}
+th.stick1,th.stick2,th.stick3{z-index:3}
+td.chk,th.chk{width:34px;text-align:center;padding:7px 0}
+td.chk{padding-top:8px}
+td.age{width:62px;padding:7px 8px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.dot{display:inline-block;width:7px;height:7px;margin-right:5px;vertical-align:1px}
+.fresh .dot{background:#000}.aging .dot{background:var(--red)}.stale .dot{background:#bdbdbd}
+.stale td{color:#8a8a8a}
+tr.sel td{background:var(--sel)}
+tr.hiddenrow td input,tr.hiddenrow td textarea{font-style:italic}
+td input[type=text],td input[type=date],td select,td textarea{display:block;width:100%;border:0;background:transparent;padding:7px 8px;border-radius:0;min-height:31px}
+td textarea{resize:none;height:31px;overflow:hidden;line-height:1.35;white-space:nowrap;text-overflow:ellipsis}
+td textarea:focus{height:auto;min-height:120px;white-space:pre-wrap;overflow:auto;position:relative;z-index:4;background:#fff;box-shadow:0 4px 18px rgba(0,0,0,.12)}
+td input:focus,td select:focus,td textarea:focus{outline:2px solid var(--red);outline-offset:-2px;background:#fff}
+td.bool{text-align:center;padding-top:8px}
+td.saving{box-shadow:inset 0 0 0 1px #bbb}
+td.saved{animation:flash 1s}
+@keyframes flash{from{background:#fff0f0}to{background:#fff}}
+td.company input{font-weight:600}
+.w-co{width:170px}.w-cn{width:260px}.w-side{width:88px}.w-sec{width:120px}.w-str{width:160px}.w-cls{width:90px}.w-size{width:120px}.w-price{width:180px}.w-fees{width:150px}.w-min{width:80px}.w-note{width:220px}.w-rec{width:130px}.w-b{width:62px}.w-src{width:220px}.w-int{width:260px}
+.empty{padding:40px;color:var(--muted);text-align:center}
+.history{list-style:none;margin:0;padding:0 20px 40px;max-width:1100px}
+.history li{display:grid;grid-template-columns:150px 150px 1fr;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}
+.history .muted{color:var(--muted)}
+.help{padding:0 20px 8px;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>prophet<span>.</span>partners <small>/ deals</small></h1>
+  <div class="tabs" role="group">
+    <button data-view="live" aria-pressed="true">live</button>
+    <button data-view="archived" aria-pressed="false">archived</button>
+    <button data-view="history" aria-pressed="false">history</button>
+  </div>
+  <div class="right">
+    <span id="status"></span>
+    <a href="/api/admin/export.csv">export csv</a>
+    <a href="/admin/stats">stats</a>
+    <a href="/" target="_blank" rel="noopener">partner view ↗</a>
+  </div>
+</div>
+
+<div id="sheet-view">
+  <div class="bar">
+    <button class="btn primary" id="add">+ add deal</button>
+    <input id="q" type="search" placeholder="search company, source, notes" style="min-width:240px">
+    <select id="f-side"><option value="">supply + demand</option><option value="supply">supply</option><option value="demand">demand</option></select>
+    <select id="f-vis"><option value="">all rows</option><option value="shown">shown to partners</option><option value="hidden">hidden only</option></select>
+    <span style="width:10px"></span>
+    <button class="btn" id="sel-old" data-live>select 21d+</button>
+    <button class="btn" id="b-received" data-live disabled>mark received today</button>
+    <button class="btn" id="b-archive" data-live disabled>archive</button>
+    <button class="btn" id="b-restore" data-arch hidden disabled>restore</button>
+    <button class="btn" id="b-delete" data-arch hidden disabled>delete permanently</button>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="help" id="help">Click a cell to edit; changes save when you leave the cell. Red columns are private. "Hide" keeps a deal off the partner page without archiving it.</div>
+  <div class="wrap"><table>
+    <thead><tr>
+      <th class="chk stick1"><input type="checkbox" id="all"></th>
+      <th class="stick2">age</th>
+      <th class="w-co stick3">company</th><th class="w-cn">company note (public, all its deals)</th><th class="w-side">side</th><th class="w-sec">sector</th><th class="w-str">structure</th><th class="w-cls">class</th>
+      <th class="w-size">size</th><th class="w-price">price</th><th class="w-fees">fees</th><th class="w-min">min</th><th class="w-note">deal note (public)</th>
+      <th class="w-rec">received</th><th class="w-b">highlight</th><th class="w-b">hide</th>
+      <th class="w-src priv">source (private)</th><th class="w-int priv">internal notes (private)</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+</div>
+<div id="history-view" hidden><ul class="history" id="history"></ul></div>
+
+<datalist id="dl-str"><option>Direct transfer<option>L1 SPV<option>L2 SPV<option>SPV<option>L1 SPV (primary)<option>Forward<option>IPO allocation<option>Any</datalist>
+<datalist id="dl-cls"><option>Preferred<option>Common</datalist>
+<datalist id="dl-sec"></datalist>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  let deals = [], today = "", view = "live", companies = {};
+  const cKey = (n) => String(n || "").trim().toLowerCase();
+  const selected = new Set();
+
+  const COLS = [
+    ["company", "text"], ["side", "side"], ["sector", "text", "dl-sec"], ["structure", "text", "dl-str"], ["shareClass", "text", "dl-cls"],
+    ["size", "text"], ["price", "text"], ["fees", "text"], ["minCheck", "text"], ["notes", "area"],
+    ["received", "date"], ["featured", "bool"], ["hidden", "bool"], ["source", "area"], ["internalNotes", "area"],
+  ];
+  const age = (d) => Math.round((Date.parse(today) - Date.parse(d.received)) / 86400000);
+  const band = (a) => (a <= 7 ? "fresh" : a <= 21 ? "aging" : "stale");
+
+  function status(msg, err) { const s = $("#status"); s.textContent = msg; s.className = err ? "err" : ""; }
+
+  async function api(path, body) {
+    const r = await fetch("/api/admin/" + path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : { cache: "no-store" });
+    const j = await r.json().catch(() => ({ error: "Unexpected response (" + r.status + ")" }));
+    if (!r.ok) throw new Error(j.error || "Request failed");
+    return j;
+  }
+
+  async function load() {
+    status("loading…");
+    try {
+      const j = await api("deals" + (view === "archived" ? "?archived=1" : ""));
+      deals = j.deals; today = j.today; companies = j.companies || {}; selected.clear();
+      $("#dl-sec").innerHTML = [...new Set(deals.map((d) => d.sector).filter(Boolean))].sort().map((s) => `<option>${esc(s)}`).join("");
+      render(); status("");
+    } catch (e) { status(e.message, true); }
+  }
+
+  function input(d, [field, type, list]) {
+    const v = d[field];
+    const attrs = `data-id="${esc(d.id)}" data-field="${field}"`;
+    if (type === "bool") return `<td class="bool"><input type="checkbox" ${attrs} ${v ? "checked" : ""}></td>`;
+    if (type === "side") return `<td><select ${attrs}><option value="supply" ${v === "supply" ? "selected" : ""}>supply</option><option value="demand" ${v === "demand" ? "selected" : ""}>demand</option></select></td>`;
+    if (type === "date") return `<td><input type="date" ${attrs} value="${esc(v)}"></td>`;
+    if (type === "area") return `<td><textarea ${attrs} rows="1">${esc(v)}</textarea></td>`;
+    return `<td class="${field === "company" ? "company stick3" : ""}"><input type="text" ${attrs} value="${esc(v)}" ${list ? `list="${list}"` : ""}></td>`;
+  }
+
+  function visible() {
+    const q = $("#q").value.trim().toLowerCase(), side = $("#f-side").value, vis = $("#f-vis").value;
+    return deals.filter((d) => (!side || d.side === side) && (!vis || (vis === "hidden" ? d.hidden : !d.hidden)) &&
+      (!q || [d.company, d.source, d.internalNotes, d.notes, d.sector].join(" ").toLowerCase().includes(q)));
+  }
+
+  function render() {
+    const list = visible();
+    $("#rows").innerHTML = list.length ? list.map((d) => {
+      const a = age(d);
+      return `<tr data-row="${esc(d.id)}" class="${band(a)} ${selected.has(d.id) ? "sel" : ""} ${d.hidden ? "hiddenrow" : ""}">
+        <td class="chk stick1"><input type="checkbox" data-sel="${esc(d.id)}" ${selected.has(d.id) ? "checked" : ""}></td>
+        <td class="age stick2" title="received ${esc(d.received)}"><span class="dot"></span>${a <= 0 ? "today" : a + "d"}</td>
+        ${COLS.slice(0, 1).map((c) => input(d, c)).join("")}
+        <td><textarea rows="1" data-cnote="${esc(d.company)}" placeholder="${d.company ? "" : "set company first"}" ${d.company ? "" : "disabled"}>${esc(companies[cKey(d.company)] || "")}</textarea></td>
+        ${COLS.slice(1).map((c) => input(d, c)).join("")}
+      </tr>`;
+    }).join("") : `<tr><td colspan="18" class="empty">${view === "archived" ? "nothing archived." : "no deals. click + add deal."}</td></tr>`;
+    const hidden = deals.filter((d) => d.hidden).length;
+    $("#count").textContent = view === "archived" ? `${deals.length} archived` : `${deals.length - hidden} shown to partners · ${hidden} hidden`;
+    syncBulk();
+  }
+
+  function syncBulk() {
+    const n = selected.size;
+    for (const id of ["#b-received", "#b-archive", "#b-restore", "#b-delete"]) $(id).disabled = !n;
+    $("#b-archive").textContent = n ? `archive (${n})` : "archive";
+    $("#all").checked = n > 0 && visible().every((d) => selected.has(d.id));
+  }
+
+  async function saveCell(el) {
+    const id = el.dataset.id, field = el.dataset.field;
+    const d = deals.find((x) => x.id === id);
+    if (!d) return;
+    const value = el.type === "checkbox" ? el.checked : el.value;
+    const old = d[field];
+    if ((el.type === "checkbox" ? !!old : String(old ?? "")) === value) return;
+    const td = el.closest("td"); td.classList.add("saving"); status("saving…");
+    try {
+      const fresh = await api("update", { id, field, value });
+      Object.assign(d, fresh);
+      td.classList.remove("saving"); td.classList.add("saved"); setTimeout(() => td.classList.remove("saved"), 1000);
+      status("saved ✓");
+      if (field === "received" || field === "hidden" || field === "company") render();
+    } catch (e) {
+      td.classList.remove("saving"); status(e.message, true);
+      if (el.type === "checkbox") el.checked = !!old; else el.value = old ?? "";
+    }
+  }
+
+  async function bulk(action, confirmText) {
+    const ids = [...selected];
+    if (!ids.length || (confirmText && !confirm(confirmText.replace("{n}", ids.length)))) return;
+    status("working…");
+    try { const r = await api("bulk", { ids, action }); await load(); status(`${r.count} updated ✓`); }
+    catch (e) { status(e.message, true); }
+  }
+
+  async function loadHistory() {
+    try {
+      const h = await api("history");
+      const t = (s) => new Date(s).toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      $("#history").innerHTML = h.map((e) => `<li><span class="muted">${t(e.t)}</span><span>${esc(e.action)}</span><span>${esc(e.text)}</span></li>`).join("") || `<li class="muted">no changes yet.</li>`;
+    } catch (e) { status(e.message, true); }
+  }
+
+  // ---- events ----
+  document.addEventListener("change", (e) => {
+    const el = e.target;
+    if (el.dataset.sel) { el.checked ? selected.add(el.dataset.sel) : selected.delete(el.dataset.sel); el.closest("tr").classList.toggle("sel", el.checked); syncBulk(); return; }
+    if (el.id === "all") { for (const d of visible()) el.checked ? selected.add(d.id) : selected.delete(d.id); render(); return; }
+    if (el.dataset.field && (el.type === "checkbox" || el.tagName === "SELECT" || el.type === "date")) saveCell(el);
+  });
+  async function saveCompanyNote(el) {
+    const company = el.dataset.cnote, key = cKey(company), note = el.value.trim();
+    if ((companies[key] || "") === note) return;
+    const td = el.closest("td"); td.classList.add("saving"); status("saving…");
+    try {
+      await api("company-note", { company, note });
+      companies[key] = note;
+      document.querySelectorAll("textarea[data-cnote]").forEach((t) => { if (cKey(t.dataset.cnote) === key) t.value = note; });
+      td.classList.remove("saving"); td.classList.add("saved"); setTimeout(() => td.classList.remove("saved"), 1000);
+      status("saved ✓");
+    } catch (e) { td.classList.remove("saving"); status(e.message, true); el.value = companies[key] || ""; }
+  }
+
+  document.addEventListener("focusout", (e) => {
+    const el = e.target;
+    if (el.dataset && el.dataset.cnote !== undefined) { el.scrollTop = 0; saveCompanyNote(el); return; }
+    if (el.dataset && el.dataset.field && (el.type === "text" || el.tagName === "TEXTAREA")) { el.scrollTop = 0; saveCell(el); }
+  });
+  document.addEventListener("keydown", (e) => {
+    const el = e.target;
+    if (e.key === "Enter" && el.dataset && el.dataset.field && el.type === "text") { e.preventDefault(); el.blur(); }
+    if (e.key === "Escape" && el.dataset && el.dataset.field) {
+      const d = deals.find((x) => x.id === el.dataset.id); if (d && el.type !== "checkbox") el.value = d[el.dataset.field] ?? ""; el.blur();
+    }
+  });
+  document.addEventListener("click", (e) => {
+    const v = e.target.closest("[data-view]");
+    if (!v) return;
+    view = v.dataset.view;
+    document.querySelectorAll("[data-view]").forEach((b) => b.setAttribute("aria-pressed", b === v));
+    $("#sheet-view").hidden = view === "history"; $("#history-view").hidden = view !== "history";
+    document.querySelectorAll("[data-live]").forEach((b) => (b.hidden = view !== "live"));
+    document.querySelectorAll("[data-arch]").forEach((b) => (b.hidden = view !== "archived"));
+    $("#add").hidden = view !== "live";
+    if (view === "history") loadHistory(); else load();
+  });
+  $("#add").onclick = async () => {
+    status("adding…");
+    try {
+      const d = await api("create", { fields: { company: "" } });
+      deals.unshift(d); $("#q").value = ""; $("#f-side").value = ""; $("#f-vis").value = "";
+      render(); status("added ✓");
+      document.querySelector(`[data-id="${CSS.escape(d.id)}"][data-field="company"]`).focus();
+    } catch (e) { status(e.message, true); }
+  };
+  $("#sel-old").onclick = () => { for (const d of visible()) if (age(d) > 21) selected.add(d.id); render(); };
+  $("#b-archive").onclick = () => bulk("archive");
+  $("#b-received").onclick = () => bulk("received", "Set the received date to today for {n} deal(s)?");
+  $("#b-restore").onclick = () => bulk("restore");
+  $("#b-delete").onclick = () => bulk("delete", "Permanently delete {n} deal(s)? This can't be undone.");
+  for (const id of ["#q", "#f-side", "#f-vis"]) $(id).addEventListener("input", render);
+
+  load();
+})();
+</script>
+</body>
+</html>

@@ -81,6 +81,31 @@ Private fields are removed on the server. They are never sent to a partner's bro
   - clicks per deal (email, WhatsApp, call, book)
   - recent activity
 
+## 5b. CRM (private, admin only)
+
+The CRM is deliberately lightweight. It lives in the same database as the deals, and **nothing in it is ever sent to the partner page**.
+
+**Who goes in:** only people tied to a deal, or people Elen adds herself. The agent will never add everyone from the inbox.
+
+| Record | Fields |
+|---|---|
+| **Contact** | name, firm, type (buyer, seller, broker, sponsor, other), email, phone, WhatsApp, notes / buy criteria (free text), follow-up date and note, last contact (automatic, from the timeline), number of deals |
+| **Deal link** | contact ↔ deal, with a role: brought it to me, co-broker, sent it to, interested, passed, or IOI (with an amount). One role per person per deal, and the role can be changed. |
+| **Timeline entry** | date, channel (email, call, meeting, WhatsApp, note), summary, optional deal, link to the source (Gmail thread or Granola note), added by Elen or by the agent |
+
+**Admin screens**
+- **Contacts tab:** a spreadsheet of people. Click to edit. Rows are sorted by follow-up date, and due follow-ups show in red. Archive, restore or delete.
+- **Deal panel:** click a deal's age (›) to see who is on the deal and in what role. You can add someone already in your contacts, or create a new contact on the spot, and log timeline entries.
+- **Contact panel:** click › on a contact to see:
+  - quick email, call and WhatsApp links
+  - follow-up and notes
+  - every deal they're on, with their role
+  - their full timeline
+- **Exports:** deals CSV and contacts CSV, including each contact's deal list.
+- **History:** every CRM change is logged.
+
+**Agent (phase 2):** the agent writes contacts, links and timeline entries through the same functions, marked "agent". New deals it finds arrive hidden, for Elen to review.
+
 ## 6. Getting deals in
 
 | Source | v1 | Later |
@@ -126,7 +151,7 @@ The daily scan writes through the same admin functions, so its rows show up in H
 
 - Per-partner links and logins, and different fees for brokers and buyers
 - Deal pipeline (IOIs, documents, closing). Rainmaker's system stays the record for that.
-- Matching buyers to supply, and numeric price fields
+- Matching buyers to supply, structured buy criteria, and numeric price fields (buy criteria are free-text notes for v1)
 - Data room, NDAs, uploads
 - The daily email/call scan and the Friday partner email (phase 2, see section 6)
 

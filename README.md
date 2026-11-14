@@ -5,14 +5,15 @@ A private deal sheet for partners, with a spreadsheet-style admin behind it. See
 | Address | Who | What |
 |---|---|---|
 | `deals.prophet.partners` | Partners (shared password) | The deal sheet |
-| `deals.prophet.partners/admin/` | You (admin password, any username) | Spreadsheet of deals: edit, add, archive, history, CSV export |
+| `deals.prophet.partners/admin/` | You (admin password, any username) | Deals spreadsheet, contacts (CRM), deal and contact panels with timelines, history, CSV exports |
 | `deals.prophet.partners/admin/stats` | You | Visitors and contact clicks |
 
 ```
 public/index.html          partner page
 public/admin/index.html    admin spreadsheet (served only after the admin password)
 functions/_middleware.js   passwords, security checks, API routes, stats
-lib/db.js                  database: tables, queries, and the filter that keeps private fields from partners
+lib/db.js                  database: deals, events, history, and the filter that keeps private fields from partners
+lib/crm.js                 CRM: contacts, deal links, timeline (admin only)
 data/seed.json             starting deals, loaded automatically the first time the site runs
 SPEC.md                    v1 spec
 ```

@@ -1,6 +1,7 @@
 // deals.prophet.partners: one handler for the whole site.
 // Partner password gate, admin (Basic Auth), JSON API, stats. Data in D1 (binding DB).
 import * as data from "../lib/db.js";
+import * as crm from "../lib/crm.js";
 
 const COOKIE = "pp_deals";
 const MAX_AGE = 60 * 60 * 24 * 30;
@@ -106,6 +107,14 @@ async function adminApi(request, url, db) {
   if (request.method === "GET") {
     if (route === "deals") return json(await data.adminDeals(db, url.searchParams.get("archived") === "1"));
     if (route === "history") return json(await data.history(db));
+    try {
+      if (route === "contacts") return json(await crm.listContacts(db, url.searchParams.get("archived") === "1"));
+      if (route === "contact") return json(await crm.contactDetail(db, url.searchParams.get("id") || ""));
+      if (route === "deal") return json(await crm.dealDetail(db, url.searchParams.get("id") || ""));
+    } catch (e) { return json({ error: e.message }, 404); }
+    if (route === "contacts.csv") {
+      return new Response("\ufeff" + (await crm.contactsCsv(db)), { headers: { ...HEADERS, "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="prophet-contacts-${data.nyDate()}.csv"` } });
+    }
     if (route === "export.csv") {
       return new Response("﻿" + (await data.exportCsv(db)), { headers: { ...HEADERS, "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="prophet-deals-${data.nyDate()}.csv"` } });
     }
@@ -117,6 +126,13 @@ async function adminApi(request, url, db) {
   try {
     if (route === "create") return json(await data.createDeal(db, body.fields || {}));
     if (route === "update") return json(await data.updateField(db, String(body.id), String(body.field), body.value));
+    if (route === "contact-create") return json(await crm.createContact(db, body.fields || {}));
+    if (route === "contact-update") return json(await crm.updateContact(db, String(body.id), String(body.field), body.value));
+    if (route === "contact-bulk") return json({ count: await crm.bulkContacts(db, body.ids, String(body.action)) });
+    if (route === "link") return json(await crm.upsertLink(db, body));
+    if (route === "link-delete") return json(await crm.deleteLink(db, Number(body.id)));
+    if (route === "interaction") return json(await crm.addInteraction(db, body));
+    if (route === "interaction-delete") return json(await crm.deleteInteraction(db, Number(body.id)));
     if (route === "company-note") return json(await data.setCompanyNote(db, body.company, body.note));
     if (route === "bulk") return json({ count: await data.bulk(db, body.ids, String(body.action)) });
   } catch (e) {
@@ -140,6 +156,7 @@ export async function onRequest(ctx) {
   if (url.pathname === "/robots.txt") return next();
   const db = env.DB;
   await data.init(db);
+  await crm.initCrm(db);
 
   // Every state-changing request must come from this site.
   if (request.method !== "GET" && request.method !== "HEAD" && !sameOrigin(request, url)) return json({ error: "Cross-site request blocked" }, 403);

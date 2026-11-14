@@ -62,19 +62,64 @@ td.company input{font-weight:600}
 .history li{display:grid;grid-template-columns:150px 150px 1fr;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}
 .history .muted{color:var(--muted)}
 .help{padding:0 20px 8px;color:var(--muted);font-size:12px}
+td.age button{all:unset;cursor:pointer;display:block;width:100%}
+td.age button:hover{color:var(--red)}
+td.ro{padding:7px 8px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+td.open-c{padding:7px 6px}
+td.open-c button{all:unset;cursor:pointer;color:var(--muted)}td.open-c button:hover{color:var(--red)}
+.due,.due input{color:var(--red)!important;font-weight:600}
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.15);opacity:0;pointer-events:none;transition:opacity .15s;z-index:20}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100vh;width:min(640px,100vw);background:#fff;border-left:2px solid var(--ink);transform:translateX(100%);transition:transform .15s;z-index:21;display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.dh{display:flex;gap:12px;align-items:flex-start;padding:18px 22px 14px;border-bottom:1px solid var(--line)}
+.dh h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.02em}
+.dh .sub{color:var(--muted);margin-top:4px}
+.dh .x{margin-left:auto}
+.db{overflow:auto;padding:4px 22px 40px;flex:1}
+.db h3{font-size:12px;font-weight:600;text-transform:lowercase;margin:22px 0 8px;display:flex;align-items:center;gap:8px}
+.db h3::before{content:"";width:7px;height:7px;background:var(--red)}
+.db .qa{display:flex;gap:12px;margin-top:8px}.db .qa a{color:var(--ink)}.db .qa a:hover{color:var(--red)}
+.links{width:100%;border-collapse:collapse;min-width:0}
+.links td{border:0;border-bottom:1px solid var(--line);padding:6px 4px;vertical-align:middle;background:#fff}
+.links td.nm button{all:unset;cursor:pointer;font-weight:600}.links td.nm button:hover{color:var(--red)}
+.links td.nm small{color:var(--muted);font-weight:400;margin-left:4px}
+.links select,.links input{border:1px solid var(--line);padding:4px 6px;font:inherit;width:100%}
+.links .rm{all:unset;cursor:pointer;color:var(--muted);padding:0 6px}.links .rm:hover{color:var(--red)}
+.addrow{display:grid;gap:6px;margin-top:10px;padding:10px;background:#fafafa;border:1px solid var(--line)}
+.addrow .r{display:flex;gap:6px;flex-wrap:wrap}
+.addrow input,.addrow select,.addrow textarea{border:1px solid var(--line);padding:6px 8px;font:inherit;background:#fff;flex:1;min-width:110px;border-radius:0}
+.addrow textarea{min-height:56px;resize:vertical;width:100%}
+.addrow .lbl{font-size:11px;color:var(--muted)}
+.tl{list-style:none;padding:0;margin:8px 0 0}
+.tl li{padding:9px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:92px 1fr auto;gap:10px}
+.tl .meta{color:var(--muted);font-size:12px}
+.tl .what{white-space:pre-wrap}
+.tl .what small{display:block;color:var(--muted);margin-top:2px}
+.tl .what a{color:var(--muted)}
+.tl .rm{all:unset;cursor:pointer;color:#bbb}.tl .rm:hover{color:var(--red)}
+.field{display:grid;gap:4px;margin-top:10px}.field label{font-size:11px;color:var(--muted)}
+.field input,.field textarea,.field select{border:1px solid var(--line);padding:7px 8px;font:inherit;border-radius:0}
+.field textarea{min-height:90px;resize:vertical}
+.muted{color:var(--muted)}
+.pill{display:inline-block;padding:1px 7px;border:1px solid var(--line);font-size:11.5px;margin-right:4px}
+.pill.agent{border-color:var(--red);color:var(--red)}
 </style>
 </head>
 <body>
 <div class="top">
   <h1>prophet<span>.</span>partners <small>/ deals</small></h1>
   <div class="tabs" role="group">
-    <button data-view="live" aria-pressed="true">live</button>
+    <button data-view="live" aria-pressed="true">deals</button>
+    <button data-view="contacts" aria-pressed="false">contacts</button>
     <button data-view="archived" aria-pressed="false">archived</button>
     <button data-view="history" aria-pressed="false">history</button>
   </div>
   <div class="right">
     <span id="status"></span>
-    <a href="/api/admin/export.csv">export csv</a>
+    <a href="/api/admin/export.csv">deals csv</a>
+    <a href="/api/admin/contacts.csv">contacts csv</a>
     <a href="/admin/stats">stats</a>
     <a href="/" target="_blank" rel="noopener">partner view ↗</a>
   </div>
@@ -94,11 +139,11 @@ td.company input{font-weight:600}
     <button class="btn" id="b-delete" data-arch hidden disabled>delete permanently</button>
     <span class="count" id="count"></span>
   </div>
-  <div class="help" id="help">Click a cell to edit; changes save when you leave the cell. Red columns are private. "Hide" keeps a deal off the partner page without archiving it.</div>
+  <div class="help" id="help">Click a cell to edit; changes save when you leave the cell. Click the age (›) to open who is involved and the timeline. Red columns are private. "Hide" keeps a deal off the partner page.</div>
   <div class="wrap"><table>
     <thead><tr>
       <th class="chk stick1"><input type="checkbox" id="all"></th>
-      <th class="stick2">age</th>
+      <th class="stick2">age ›</th>
       <th class="w-co stick3">company</th><th class="w-cn">company note (public, all its deals)</th><th class="w-side">side</th><th class="w-sec">sector</th><th class="w-str">structure</th><th class="w-cls">class</th>
       <th class="w-size">size</th><th class="w-price">price</th><th class="w-fees">fees</th><th class="w-min">min</th><th class="w-note">deal note (public)</th>
       <th class="w-rec">received</th><th class="w-b">highlight</th><th class="w-b">hide</th>
@@ -108,6 +153,36 @@ td.company input{font-weight:600}
   </table></div>
 </div>
 <div id="history-view" hidden><ul class="history" id="history"></ul></div>
+
+<div id="contacts-view" hidden>
+  <div class="bar">
+    <button class="btn primary" id="c-add">+ add contact</button>
+    <input id="cq" type="search" placeholder="search name, firm, email, notes" style="min-width:240px">
+    <select id="c-type"><option value="">all types</option><option>buyer</option><option>seller</option><option>broker</option><option>sponsor</option><option>other</option></select>
+    <select id="c-arch"><option value="0">active</option><option value="1">archived</option></select>
+    <span style="width:10px"></span>
+    <button class="btn" id="c-archive" disabled>archive</button>
+    <button class="btn" id="c-restore" hidden disabled>restore</button>
+    <button class="btn" id="c-delete" hidden disabled>delete permanently</button>
+    <span class="count" id="c-count"></span>
+  </div>
+  <div class="help">Click a cell to edit. Click › to open a contact's deals and timeline. Follow-ups due today or earlier are red. Sorted by follow-up date.</div>
+  <div class="wrap"><table style="min-width:1700px">
+    <thead><tr>
+      <th class="chk stick1"><input type="checkbox" id="c-all"></th>
+      <th class="stick2" style="width:30px"></th>
+      <th style="width:170px">name</th><th style="width:160px">firm</th><th style="width:100px">type</th><th style="width:200px">email</th>
+      <th style="width:130px">phone</th><th style="width:130px">whatsapp</th><th style="width:300px">notes / buy criteria</th>
+      <th style="width:135px">follow-up</th><th style="width:200px">follow-up note</th><th style="width:100px">last contact</th><th style="width:60px">deals</th>
+    </tr></thead>
+    <tbody id="c-rows"></tbody>
+  </table></div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer"><div class="dh"><div><h2 id="d-title"></h2><div class="sub" id="d-sub"></div><div class="qa" id="d-qa"></div></div><button class="btn x" id="d-close">close</button></div><div class="db" id="d-body"></div></aside>
+<datalist id="dl-contacts"></datalist>
+<datalist id="dl-deals"></datalist>
 
 <datalist id="dl-str"><option>Direct transfer<option>L1 SPV<option>L2 SPV<option>SPV<option>L1 SPV (primary)<option>Forward<option>IPO allocation<option>Any</datalist>
 <datalist id="dl-cls"><option>Preferred<option>Common</datalist>
@@ -170,7 +245,7 @@ td.company input{font-weight:600}
       const a = age(d);
       return `<tr data-row="${esc(d.id)}" class="${band(a)} ${selected.has(d.id) ? "sel" : ""} ${d.hidden ? "hiddenrow" : ""}">
         <td class="chk stick1"><input type="checkbox" data-sel="${esc(d.id)}" ${selected.has(d.id) ? "checked" : ""}></td>
-        <td class="age stick2" title="received ${esc(d.received)}"><span class="dot"></span>${a <= 0 ? "today" : a + "d"}</td>
+        <td class="age stick2" title="received ${esc(d.received)} · click for people & timeline"><button data-open-deal="${esc(d.id)}"><span class="dot"></span>${a <= 0 ? "today" : a + "d"} ›</button></td>
         ${COLS.slice(0, 1).map((c) => input(d, c)).join("")}
         <td><textarea rows="1" data-cnote="${esc(d.company)}" placeholder="${d.company ? "" : "set company first"}" ${d.company ? "" : "disabled"}>${esc(companies[cKey(d.company)] || "")}</textarea></td>
         ${COLS.slice(1).map((c) => input(d, c)).join("")}
@@ -261,11 +336,11 @@ td.company input{font-weight:600}
     if (!v) return;
     view = v.dataset.view;
     document.querySelectorAll("[data-view]").forEach((b) => b.setAttribute("aria-pressed", b === v));
-    $("#sheet-view").hidden = view === "history"; $("#history-view").hidden = view !== "history";
+    $("#sheet-view").hidden = view === "history" || view === "contacts"; $("#history-view").hidden = view !== "history"; $("#contacts-view").hidden = view !== "contacts";
     document.querySelectorAll("[data-live]").forEach((b) => (b.hidden = view !== "live"));
     document.querySelectorAll("[data-arch]").forEach((b) => (b.hidden = view !== "archived"));
     $("#add").hidden = view !== "live";
-    if (view === "history") loadHistory(); else load();
+    if (view === "history") loadHistory(); else if (view === "contacts") loadContacts(); else load();
   });
   $("#add").onclick = async () => {
     status("adding…");
@@ -282,6 +357,199 @@ td.company input{font-weight:600}
   $("#b-restore").onclick = () => bulk("restore");
   $("#b-delete").onclick = () => bulk("delete", "Permanently delete {n} deal(s)? This can't be undone.");
   for (const id of ["#q", "#f-side", "#f-vis"]) $(id).addEventListener("input", render);
+
+
+  // ================= CRM =================
+  let contacts = [], cSelected = new Set(), allContacts = [], liveDeals = [];
+  const CTYPES = ["buyer", "seller", "broker", "sponsor", "other"];
+  const ROLES = { brought: "brought it to me", cobroker: "co-broker", sent: "sent it to", interested: "interested", passed: "passed", ioi: "IOI" };
+  const CHANNELS = ["email", "call", "meeting", "whatsapp", "note"];
+  const fmtD = (d) => d ? new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" }) : "";
+  const label = (c) => `${c.name || "(no name)"}${c.firm ? " — " + c.firm : ""}`;
+
+  async function refreshLookups() {
+    try {
+      const [c, d] = await Promise.all([api("contacts"), api("deals")]);
+      allContacts = c.contacts; liveDeals = d.deals;
+      $("#dl-contacts").innerHTML = allContacts.map((x) => `<option value="${esc(label(x))}">`).join("");
+      $("#dl-deals").innerHTML = liveDeals.filter((x) => x.company).map((x) => `<option value="${esc(dealLabel(x))}">`).join("");
+    } catch (e) {}
+  }
+  const dealLabel = (d) => [d.company, d.structure, d.size].filter(Boolean).join(" · ") + ` [${d.id}]`;
+  const findContact = (txt) => allContacts.find((c) => label(c) === txt) || allContacts.find((c) => (c.name || "").toLowerCase() === txt.trim().toLowerCase());
+  const findDeal = (txt) => { const m = txt.match(/\[([^\]]+)\]$/); return m ? liveDeals.find((d) => d.id === m[1]) : liveDeals.find((d) => d.company.toLowerCase() === txt.trim().toLowerCase()); };
+
+  async function loadContacts() {
+    status("loading…");
+    try {
+      const j = await api("contacts" + ($("#c-arch").value === "1" ? "?archived=1" : ""));
+      contacts = j.contacts; today = j.today; cSelected.clear(); renderContacts(); status("");
+    } catch (e) { status(e.message, true); }
+  }
+  function cVisible() {
+    const q = $("#cq").value.trim().toLowerCase(), t = $("#c-type").value;
+    return contacts.filter((c) => (!t || c.type === t) && (!q || [c.name, c.firm, c.email, c.notes, c.followUpNote].join(" ").toLowerCase().includes(q)));
+  }
+  function cInput(c, field, type) {
+    const v = c[field] ?? "", a = `data-cid="${esc(c.id)}" data-cfield="${field}"`;
+    if (type === "type") return `<td><select ${a}>${CTYPES.map((t) => `<option ${t === v ? "selected" : ""}>${t}</option>`).join("")}</select></td>`;
+    if (type === "date") return `<td class="${v && v <= today ? "due" : ""}"><input type="date" ${a} value="${esc(v)}"></td>`;
+    if (type === "area") return `<td><textarea rows="1" ${a}>${esc(v)}</textarea></td>`;
+    return `<td class="${field === "name" ? "company" : ""}"><input type="text" ${a} value="${esc(v)}"></td>`;
+  }
+  function renderContacts() {
+    const list = cVisible(), arch = $("#c-arch").value === "1";
+    $("#c-rows").innerHTML = list.length ? list.map((c) => `<tr class="${cSelected.has(c.id) ? "sel" : ""}">
+      <td class="chk stick1"><input type="checkbox" data-csel="${esc(c.id)}" ${cSelected.has(c.id) ? "checked" : ""}></td>
+      <td class="open-c stick2"><button data-open-contact="${esc(c.id)}" title="open">›</button></td>
+      ${cInput(c, "name")}${cInput(c, "firm")}${cInput(c, "type", "type")}${cInput(c, "email")}${cInput(c, "phone")}${cInput(c, "whatsapp")}
+      ${cInput(c, "notes", "area")}${cInput(c, "followUp", "date")}${cInput(c, "followUpNote")}
+      <td class="ro">${c.lastContact ? fmtD(c.lastContact) : "–"}</td><td class="ro">${c.dealCount || ""}</td>
+    </tr>`).join("") : `<tr><td colspan="13" class="empty">${arch ? "nothing archived." : "no contacts yet. click + add contact, or add people from a deal (click its age)."}</td></tr>`;
+    const due = contacts.filter((c) => c.followUp && c.followUp <= today).length;
+    $("#c-count").textContent = `${contacts.length} ${arch ? "archived" : "contacts"}${due ? ` · ${due} follow-up${due > 1 ? "s" : ""} due` : ""}`;
+    for (const id of ["#c-archive", "#c-restore", "#c-delete"]) $(id).disabled = !cSelected.size;
+    $("#c-archive").hidden = arch; $("#c-restore").hidden = $("#c-delete").hidden = !arch; $("#c-add").hidden = arch;
+  }
+  async function saveContactCell(el) {
+    const c = contacts.find((x) => x.id === el.dataset.cid); if (!c) return;
+    const f = el.dataset.cfield, v = el.value;
+    if (String(c[f] ?? "") === v) return;
+    const td = el.closest("td"); status("saving…");
+    try { Object.assign(c, await api("contact-update", { id: c.id, field: f, value: v })); td.classList.add("saved"); setTimeout(() => td.classList.remove("saved"), 1000); status("saved ✓"); if (f === "followUp") renderContacts(); refreshLookups(); }
+    catch (e) { status(e.message, true); el.value = c[f] ?? ""; }
+  }
+  async function cBulk(action, msg) {
+    const ids = [...cSelected]; if (!ids.length || (msg && !confirm(msg.replace("{n}", ids.length)))) return;
+    try { const r = await api("contact-bulk", { ids, action }); await loadContacts(); refreshLookups(); status(`${r.count} updated ✓`); } catch (e) { status(e.message, true); }
+  }
+
+  // ---------- drawer ----------
+  let drawer = null; // {kind, id}
+  const openDrawer = () => { $("#drawer").classList.add("open"); $("#scrim").classList.add("open"); };
+  const closeDrawer = () => { drawer = null; $("#drawer").classList.remove("open"); $("#scrim").classList.remove("open"); if (view === "contacts") loadContacts(); };
+  const roleSelect = (cur, attr) => `<select ${attr}>${Object.entries(ROLES).map(([k, l]) => `<option value="${k}" ${k === cur ? "selected" : ""}>${l}</option>`).join("")}</select>`;
+  const chanSelect = () => `<select name="channel">${CHANNELS.map((c) => `<option>${c}</option>`).join("")}</select>`;
+  const tlItem = (i, who) => `<li><span class="meta">${fmtD(i.date)}<br>${esc(i.channel)}</span><span class="what">${esc(i.summary)}<small>${esc(who || "")}${i.link ? ` · <a href="${esc(i.link)}" target="_blank" rel="noopener">source ↗</a>` : ""}${i.source === "agent" ? ' · <span class="pill agent">agent</span>' : ""}</small></span><button class="rm" data-del-int="${i.id}" title="remove">✕</button></li>`;
+
+  async function openDeal(id) {
+    drawer = { kind: "deal", id }; openDrawer(); $("#d-body").innerHTML = '<p class="muted">loading…</p>';
+    try {
+      await refreshLookups();
+      const { deal: d, links, timeline } = await api("deal?id=" + encodeURIComponent(id));
+      $("#d-title").textContent = d.company || "(no company)";
+      $("#d-sub").textContent = [d.side, d.structure, d.size, d.price, d.fees].filter(Boolean).join(" · ");
+      $("#d-qa").innerHTML = d.source ? `<span class="muted">source: ${esc(d.source)}</span>` : "";
+      $("#d-body").innerHTML = `
+        <h3>people on this deal</h3>
+        ${links.length ? `<table class="links">${links.map((l) => `<tr>
+          <td class="nm"><button data-open-contact="${esc(l.contactId)}">${esc(l.name || "(no name)")}</button><small>${esc([l.firm, l.type].filter(Boolean).join(" · "))}</small></td>
+          <td style="width:150px">${roleSelect(l.role, `data-link-role data-c="${esc(l.contactId)}" data-ioi="${esc(l.ioi)}"`)}</td>
+          <td style="width:110px"><input placeholder="IOI amount" value="${esc(l.ioi)}" data-link-ioi data-c="${esc(l.contactId)}" data-role="${esc(l.role)}"></td>
+          <td style="width:30px"><button class="rm" data-del-link="${l.id}" title="remove">✕</button></td></tr>`).join("")}</table>` : `<p class="muted">nobody linked yet.</p>`}
+        <form class="addrow" id="f-addperson">
+          <div class="r"><input name="who" list="dl-contacts" placeholder="existing contact (start typing)" autocomplete="off">${roleSelect("sent", 'name="role"')}<input name="ioi" placeholder="IOI (optional)" style="max-width:120px"><button class="btn" type="submit">add</button></div>
+          <div class="lbl">or create a new contact and add them:</div>
+          <div class="r"><input name="nname" placeholder="name"><input name="nfirm" placeholder="firm"><select name="ntype">${CTYPES.map((t) => `<option>${t}</option>`).join("")}</select><input name="nemail" placeholder="email"></div>
+        </form>
+        <h3>timeline</h3>
+        <form class="addrow" id="f-addint">
+          <div class="r"><select name="contactId">${links.length ? links.map((l) => `<option value="${esc(l.contactId)}">${esc(l.name)}</option>`).join("") : '<option value="">add a person first</option>'}</select>${chanSelect()}<input type="date" name="date" value="${today}" style="max-width:150px"></div>
+          <textarea name="summary" placeholder="what happened, e.g. sent teaser, asked for data room, IOI $2M at $81"></textarea>
+          <div class="r"><input name="link" placeholder="link to email thread / Granola note (optional)"><button class="btn" type="submit">add to timeline</button></div>
+        </form>
+        <ul class="tl">${timeline.map((i) => tlItem(i, i.name)).join("") || '<li class="muted" style="display:block">nothing logged yet.</li>'}</ul>`;
+    } catch (e) { $("#d-body").innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
+  }
+
+  async function openContact(id) {
+    drawer = { kind: "contact", id }; openDrawer(); $("#d-body").innerHTML = '<p class="muted">loading…</p>';
+    try {
+      await refreshLookups();
+      const { contact: c, links, timeline } = await api("contact?id=" + encodeURIComponent(id));
+      const wa = String(c.whatsapp || c.phone || "").replace(/[^\d]/g, "");
+      $("#d-title").textContent = c.name || "(no name)";
+      $("#d-sub").textContent = [c.firm, c.type].filter(Boolean).join(" · ") + (c.source === "agent" ? " · added by agent" : "");
+      $("#d-qa").innerHTML = [c.email && `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`, c.phone && `<a href="tel:${esc(c.phone)}">${esc(c.phone)}</a>`, wa && `<a href="https://wa.me/${wa}" target="_blank" rel="noopener">whatsapp</a>`].filter(Boolean).join("");
+      $("#d-body").innerHTML = `
+        <div class="field"><label>follow-up</label><div style="display:flex;gap:6px"><input type="date" data-df="followUp" value="${esc(c.followUp)}" style="max-width:170px"><input data-df="followUpNote" value="${esc(c.followUpNote)}" placeholder="what to follow up on" style="flex:1"></div></div>
+        <div class="field"><label>notes / buy criteria (private)</label><textarea data-df="notes">${esc(c.notes)}</textarea></div>
+        <h3>deals</h3>
+        ${links.length ? `<table class="links">${links.map((l) => `<tr>
+          <td class="nm"><button data-open-deal="${esc(l.dealId)}">${esc(l.company || "(deleted deal)")}</button><small>${esc([l.structure, l.size, l.price].filter(Boolean).join(" · "))}${l.dealArchived ? " · archived" : ""}</small></td>
+          <td style="width:150px">${roleSelect(l.role, `data-link-role data-d="${esc(l.dealId)}" data-ioi="${esc(l.ioi)}"`)}</td>
+          <td style="width:110px"><input placeholder="IOI amount" value="${esc(l.ioi)}" data-link-ioi data-d="${esc(l.dealId)}" data-role="${esc(l.role)}"></td>
+          <td style="width:30px"><button class="rm" data-del-link="${l.id}" title="remove">✕</button></td></tr>`).join("")}</table>` : `<p class="muted">not linked to any deal yet.</p>`}
+        <form class="addrow" id="f-adddeal"><div class="r"><input name="deal" list="dl-deals" placeholder="deal (start typing company)" autocomplete="off">${roleSelect("sent", 'name="role"')}<input name="ioi" placeholder="IOI (optional)" style="max-width:120px"><button class="btn" type="submit">add</button></div></form>
+        <h3>timeline</h3>
+        <form class="addrow" id="f-addint">
+          <input type="hidden" name="contactId" value="${esc(c.id)}">
+          <div class="r"><select name="dealId"><option value="">no specific deal</option>${links.map((l) => `<option value="${esc(l.dealId)}">${esc(l.company || l.dealId)}</option>`).join("")}</select>${chanSelect()}<input type="date" name="date" value="${today}" style="max-width:150px"></div>
+          <textarea name="summary" placeholder="what happened"></textarea>
+          <div class="r"><input name="link" placeholder="link to email thread / Granola note (optional)"><button class="btn" type="submit">add to timeline</button></div>
+        </form>
+        <ul class="tl">${timeline.map((i) => tlItem(i, i.company)).join("") || '<li class="muted" style="display:block">nothing logged yet.</li>'}</ul>`;
+    } catch (e) { $("#d-body").innerHTML = `<p class="muted">${esc(e.message)}</p>`; }
+  }
+  const reopen = () => drawer && (drawer.kind === "deal" ? openDeal(drawer.id) : openContact(drawer.id));
+
+  document.addEventListener("submit", async (e) => {
+    const f = e.target; if (!["f-addperson", "f-adddeal", "f-addint"].includes(f.id)) return;
+    e.preventDefault(); const v = Object.fromEntries(new FormData(f).entries());
+    try {
+      if (f.id === "f-addperson") {
+        let contactId;
+        if (v.nname && v.nname.trim()) contactId = (await api("contact-create", { fields: { name: v.nname, firm: v.nfirm, type: v.ntype, email: v.nemail } })).id;
+        else { const c = findContact(v.who || ""); if (!c) throw new Error("Pick an existing contact from the list, or fill in a new name."); contactId = c.id; }
+        await api("link", { dealId: drawer.id, contactId, role: v.role, ioi: v.ioi });
+      } else if (f.id === "f-adddeal") {
+        const d = findDeal(v.deal || ""); if (!d) throw new Error("Pick a deal from the list.");
+        await api("link", { dealId: d.id, contactId: drawer.id, role: v.role, ioi: v.ioi });
+      } else {
+        await api("interaction", { ...v, dealId: v.dealId ?? (drawer.kind === "deal" ? drawer.id : "") });
+      }
+      status("saved ✓"); reopen();
+    } catch (err) { status(err.message, true); }
+  });
+
+  document.addEventListener("click", async (e) => {
+    const od = e.target.closest("[data-open-deal]"); if (od) { e.preventDefault(); return openDeal(od.dataset.openDeal); }
+    const oc = e.target.closest("[data-open-contact]"); if (oc) { e.preventDefault(); return openContact(oc.dataset.openContact); }
+    const dl = e.target.closest("[data-del-link]"); if (dl) { if (confirm("Remove this person from the deal?")) { try { await api("link-delete", { id: dl.dataset.delLink }); reopen(); } catch (err) { status(err.message, true); } } return; }
+    const di = e.target.closest("[data-del-int]"); if (di) { if (confirm("Remove this timeline entry?")) { try { await api("interaction-delete", { id: di.dataset.delInt }); reopen(); } catch (err) { status(err.message, true); } } return; }
+  });
+  document.addEventListener("change", async (e) => {
+    const el = e.target;
+    if (el.dataset.csel !== undefined) { el.checked ? cSelected.add(el.dataset.csel) : cSelected.delete(el.dataset.csel); renderContacts(); return; }
+    if (el.id === "c-all") { for (const c of cVisible()) el.checked ? cSelected.add(c.id) : cSelected.delete(c.id); renderContacts(); return; }
+    if (el.dataset.cfield && (el.tagName === "SELECT" || el.type === "date")) return saveContactCell(el);
+    if (el.dataset.linkRole !== undefined || el.dataset.linkIoi !== undefined) {
+      const dealId = el.dataset.d || drawer.id, contactId = el.dataset.c || drawer.id;
+      const role = el.dataset.linkRole !== undefined ? el.value : el.dataset.role, ioi = el.dataset.linkIoi !== undefined ? el.value : el.dataset.ioi;
+      try { await api("link", { dealId, contactId, role, ioi }); status("saved ✓"); reopen(); } catch (err) { status(err.message, true); }
+      return;
+    }
+    if (el.dataset.df && el.type === "date") saveDrawerField(el);
+  });
+  async function saveDrawerField(el) {
+    try { await api("contact-update", { id: drawer.id, field: el.dataset.df, value: el.value }); status("saved ✓"); } catch (err) { status(err.message, true); }
+  }
+  document.addEventListener("focusout", (e) => {
+    const el = e.target; if (!el.dataset) return;
+    if (el.dataset.cfield && (el.type === "text" || el.tagName === "TEXTAREA")) { el.scrollTop = 0; saveContactCell(el); }
+    if (el.dataset.df && el.type !== "date") saveDrawerField(el);
+  });
+  $("#c-add").onclick = async () => {
+    try { const c = await api("contact-create", { fields: {} }); contacts.unshift(c); $("#cq").value = ""; $("#c-type").value = ""; renderContacts();
+      document.querySelector(`[data-cid="${CSS.escape(c.id)}"][data-cfield="name"]`).focus(); status("added ✓"); refreshLookups(); } catch (e) { status(e.message, true); }
+  };
+  $("#c-archive").onclick = () => cBulk("archive");
+  $("#c-restore").onclick = () => cBulk("restore");
+  $("#c-delete").onclick = () => cBulk("delete", "Permanently delete {n} contact(s), with their deal links and timeline? This can't be undone.");
+  for (const id of ["#cq", "#c-type"]) $(id).addEventListener("input", renderContacts);
+  $("#c-arch").addEventListener("change", loadContacts);
+  $("#d-close").onclick = closeDrawer; $("#scrim").onclick = closeDrawer;
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && drawer && !e.target.dataset?.field) closeDrawer(); });
 
   load();
 })();

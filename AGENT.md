@@ -23,6 +23,7 @@ Run these first:
 ```sql
 SELECT COALESCE(MAX(t), '') AS last_run FROM agent_runs;
 SELECT id, company, side, sector, structure, size, price, fees, received FROM deals WHERE archivedAt IS NULL;
+SELECT name FROM companies WHERE description != '';
 SELECT id, name, email, firm, types, directAccess, lookingFor FROM contacts WHERE archivedAt IS NULL;
 SELECT kind, dealId, summary FROM agent_inbox WHERE status = 'pending';
 ```
@@ -66,6 +67,7 @@ SELECT kind, dealId, summary FROM agent_inbox WHERE status = 'pending';
 ## Step 2: Granola
 
 Read business meetings in the window. For each one:
+- **Identify the real people.** A meeting title is never a person. Match participants to existing contacts by email first, then full name. Never create a contact named after a meeting title or a company; if unsure who it was, put the call under "Needs your input".
 - Each participant gets a `contact` row, then a `note` row with the gist: 1 to 2 lines, the company if one was discussed, and channel `"call"` or `"meeting"`.
 - Small-talk details (family, travel, interests, birthdays) go in a `contact` row's `personalNote` and `birthday`. Keep these short.
 - Deals mentioned with terms become `new_deal` or `deal_update` rows. Who brought them, or who's interested, becomes a `link` row.
@@ -76,6 +78,9 @@ Read business meetings in the window. For each one:
   - New supply → contacts whose `lookingFor` includes the company, and live `demand` deals for the same company.
   - New demand → contacts with `directAccess` to it, and live supply.
   - Add a `match` row for each, unless one is already pending for that deal and person.
+  - Skip the match when both sides are RMS Brokers (the supply holder and the demand holder both have type RMS Broker, or both are @rainmakersecurities.com / Rainmaker Deals). They match internally at RMS.
+  - Every match names both sides: `supplyHolder` and `demandHolder` as "Name (Firm)". In the brief: `Company: supply Name (Firm) ↔ demand Name (Firm), why`.
+- **New companies:** if a company in this run is not in the companies list (Step 0 query), add a `company` row with a one-line description: what the company does, under 15 words, no hype, no em dashes. Only describe companies you are sure about; otherwise list it under "Needs your input".
 - **Staleness:** live deals posted more than 14 days ago with no mention in the window get an `archive_suggest` row. Skip deals that already have one pending.
 - **Drafts:** for strong matches and overdue replies, write a Gmail draft (never send). List the drafts in the brief.
 
@@ -96,7 +101,8 @@ INSERT INTO agent_inbox (runId, kind, payload, summary, sourceLink) VALUES (:run
 | `contact` | `{"name","email","firm","phone","types":[...],"directAccess":"A, B","lookingFor":"C","personalNote","birthday":"Mar 14"}` |
 | `note` | `{"email" or "name","text","channel":"email"\|"call"\|"meeting"\|"whatsapp","company","link","date":"YYYY-MM-DD"}` |
 | `link` | `{"email" or "name","dealId" or "company","role","ioi"}` |
-| `match` | `{"dealId","contactEmail","contactName","reason"}` |
+| `match` | `{"dealId","contactEmail","contactName","contactTypes":[...],"supplyHolder":"Name (Firm)","demandHolder":"Name (Firm)","reason"}` |
+| `company` | `{"company","description"}` (only fills an empty description, never overwrites) |
 | `archive_suggest` | `{"dealId","reason"}` |
 
 **Field rules**

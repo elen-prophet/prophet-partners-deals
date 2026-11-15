@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" href="/favicon.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <title>deals admin | prophet.partners</title>
 <style>
 :root{--ink:#000;--ink2:#2b2b2b;--muted:#767676;--line:#e3e3e3;--bg:#fff;--red:#ff0000;--sel:#fff3f3}
@@ -767,7 +768,7 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
   }
   function card(i) {
     let p = {}; try { p = JSON.parse(i.payload || "{}"); } catch (e) {}
-    const src = i.sourceLink ? `<div class="src">source: <a href="${esc(i.sourceLink)}" target="_blank" rel="noopener">${esc(p.source || "open ↗")}</a></div>` : (p.source ? `<div class="src">source: ${esc(p.source)}</div>` : "");
+    const src = /^https?:\/\//i.test(i.sourceLink || "") ? `<div class="src">source: <a href="${esc(i.sourceLink)}" target="_blank" rel="noopener">${esc(p.source || "open ↗")}</a></div>` : (p.source ? `<div class="src">source: ${esc(p.source)}</div>` : "");
     const terms = (d) => [d.structure, d.size, d.price, d.fees].filter(Boolean).join(" · ");
     const btn = (label, action, cls = "") => `<button class="btn ${cls}" data-resolve="${i.id}" data-action="${action}">${label}</button>`;
     const open = i.dealId ? `<button class="btn" data-open-deal="${esc(i.dealId)}">open</button>` : "";
@@ -776,7 +777,8 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
       const ch = Object.entries(p.changes || {}).map(([k, v]) => `${esc(k)}: <s>${esc(i[k] ?? "")}</s> → <b>${esc(v)}</b>`).join("<br>");
       return `<div class="icard"><div><div class="ti">${esc(i.company)}<small>${esc(terms(i))}</small></div><div class="diff">${ch}</div>${i.summary ? `<div class="sm">${esc(i.summary)}</div>` : ""}${src}</div><div class="acts">${btn("accept", "accept", "primary")}${open}${btn("reject", "dismiss")}</div></div>`;
     }
-    if (i.kind === "match") return `<div class="icard"><div><div class="ti">${esc(p.contactName || p.email || "")} ↔ ${esc(i.company)}</div><div class="sm">${esc(i.summary || p.reason || "")}</div>${src}</div><div class="acts">${btn("mark as sent", "accept", "primary")}${open}${btn("dismiss", "dismiss")}</div></div>`;
+    if (i.kind === "match") { const sides = [p.supplyHolder && `supply: ${p.supplyHolder}`, p.demandHolder && `demand: ${p.demandHolder}`].filter(Boolean).join(" · ");
+      return `<div class="icard"><div><div class="ti">${esc(p.contactName || p.email || "")} ↔ ${esc(i.company)}</div>${sides ? `<div class="sm"><b>${esc(sides)}</b></div>` : ""}<div class="sm">${esc(i.summary || p.reason || "")}</div>${src}</div><div class="acts">${btn("mark as sent", "accept", "primary")}${open}${btn("dismiss", "dismiss")}</div></div>`; }
     return `<div class="icard"><div><div class="ti">${esc(i.company)}<small>posted ${esc(i.received || "")}</small></div><div class="sm">${esc(i.summary || p.reason || "")}</div>${src}</div><div class="acts">${btn("archive", "accept", "primary")}${open}${btn("keep", "dismiss")}</div></div>`;
   }
   function setInboxBadge(n) { document.querySelector('[data-view="inbox"]').textContent = n ? `inbox (${n})` : "inbox"; }

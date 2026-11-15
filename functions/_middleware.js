@@ -71,7 +71,7 @@ async function loginPage(env, db, { error = "", status = 200, sent = false } = {
   const sectors = t.sectors.slice(0, 4).join(", ");
   const site = env.TURNSTILE_SITEKEY || "";
   return html(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow"><title>deal sheet | prophet.partners</title>
+<meta name="robots" content="noindex,nofollow"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" href="/favicon.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><title>deal sheet | prophet.partners</title>
 ${site ? '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>' : ""}
 <style>
 *{box-sizing:border-box}body{margin:0;background:#fff;color:#000;font:15px/1.5 "Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
@@ -162,7 +162,7 @@ async function statsPage(db) {
   const time = (t) => new Date(t).toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
   const label = { view: "viewed page", login: "signed in", click_email: "email", click_whatsapp: "whatsapp", click_call: "call", click_book: "book a call" };
   const tr = (cells) => `<tr>${cells.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`;
-  return html(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>stats | deals admin</title>
+  return html(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" href="/favicon.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><title>stats | deals admin</title>
 <style>body{font:14px/1.45 "Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;margin:0;padding:28px;background:#fff;color:#000}a{color:#000}h1{font-weight:700;font-size:28px;letter-spacing:-.02em;margin:8px 0}
 h2{font-size:12px;font-weight:600;text-transform:lowercase;margin:30px 0 8px;display:flex;gap:8px;align-items:center}h2::before{content:"";width:8px;height:8px;background:#ff0000}
 table{border-collapse:collapse;border:1px solid #e6e6e6;width:100%;max-width:960px}td,th{padding:7px 10px;border-bottom:1px solid #f0f0f0;text-align:left;font-variant-numeric:tabular-nums}th{font-size:11px;color:#767676;font-weight:500;text-transform:lowercase}p{color:#767676}</style></head><body>
@@ -254,7 +254,7 @@ async function approvePage(env, url, db, action) {
   const body = `Hi ${first},\n\nGreat to connect. Here's access to our live deal sheet:\n${site}\nPassword: ${env.DEALS_PASSWORD}\n\nAll terms are indicative and updated daily.${c.weekly === "1" ? " You'll also get the weekly update on Fridays." : ""}\n\nBest,\nElena`;
   const mailto = `mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent("Your access to the prophet.partners deal sheet")}&body=${encodeURIComponent(body)}`;
   const approved = action !== "decline";
-  return html(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${approved ? "approved" : "declined"} | deals admin</title>
+  return html(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" href="/favicon.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><title>${approved ? "approved" : "declined"} | deals admin</title>
 <style>body{font:15px/1.5 "Helvetica Neue",Helvetica,Arial,system-ui,sans-serif;margin:0;padding:32px 20px;max-width:560px}h1{font-size:28px;letter-spacing:-.02em;margin:0 0 6px}p{color:#555}
 a.btn{display:inline-block;background:#000;color:#fff;text-decoration:none;padding:13px 18px;margin:14px 10px 0 0}a.btn:hover{background:#ff0000}a.ghost{background:#fff;color:#000;border:1px solid #000}
 pre{white-space:pre-wrap;background:#fafafa;border:1px solid #e6e6e6;padding:12px;font:13px/1.5 inherit}</style></head><body>
@@ -320,7 +320,7 @@ export async function onRequest(ctx) {
   const { request, env, next } = ctx;
   const url = new URL(request.url);
   if (!env.DEALS_PASSWORD || !env.ADMIN_PASSWORD || !env.DB) return html("Setup incomplete: set DEALS_PASSWORD, ADMIN_PASSWORD and the DB (D1) binding. See README.", 500);
-  if (url.pathname === "/robots.txt" || url.pathname === "/logo.png") return next();
+  if (["/robots.txt", "/logo.png", "/favicon.ico", "/favicon.png", "/apple-touch-icon.png"].includes(url.pathname)) return next();
   const db = env.DB;
   await data.init(db);
   await crm.initCrm(db);
@@ -334,12 +334,19 @@ export async function onRequest(ctx) {
 
   // ---- admin ----
   if (url.pathname.startsWith("/admin") || url.pathname.startsWith("/api/admin/")) {
+    // Brute-force guard: 10 wrong admin passwords per IP per 15 minutes, then locked out.
+    const aip = request.headers.get("CF-Connecting-IP") || "";
+    if ((await data.recentFailures(db, aip, "admin_fail")) >= MAX_FAILS) return new Response("Too many attempts. Try again in 15 minutes.", { status: 429, headers: HEADERS });
     if (!(await checkAdmin(request, env))) {
+      if (request.headers.get("Authorization")) data.logEvent(db, ctx, request, "admin_fail", "");
       return new Response("Admin password required", { status: 401, headers: { "WWW-Authenticate": 'Basic realm="prophet-deals-admin", charset="UTF-8"', ...HEADERS } });
     }
     await agent.processInbox(db).catch((e) => console.log("agent inbox", e.message));
     if (url.pathname.startsWith("/api/admin/")) return adminApi(request, url, db);
     if (url.pathname === "/admin/stats") return statsPage(db);
+    // Approve/decline change data on GET (they're links in the notification email), so only allow real page opens,
+    // never a hidden image or script request from another site.
+    if ((url.pathname === "/admin/approve" || url.pathname === "/admin/decline") && !["document", null].includes(request.headers.get("Sec-Fetch-Dest"))) return html("Open this link directly.", 403);
     if (url.pathname === "/admin/approve") return approvePage(env, url, db, "approve");
     if (url.pathname === "/admin/decline") return approvePage(env, url, db, "decline");
     if (url.pathname === "/admin") return Response.redirect(new URL("/admin/", url), 302);

@@ -33,8 +33,9 @@ Behind it is a simple spreadsheet-style back office where Elen adds, edits and a
 | Share class | yes | Preferred / Common |
 | Size, Price, Fees, Min check | yes | Free text, exactly as received |
 | Deal note | yes | Context for this specific offer. Never sponsor names. |
-| Company note | yes | One note per company, shown above all of that company's deals (e.g. "raising at $28.8B"). Written once, applies to every deal for that company. |
-| Received | yes | Date the deal came in. This drives the age indicator. |
+| Company description | yes | One line per company (black dot). Belongs to the company, not the deal, so it survives archiving and reappears on the next deal with the same name. |
+| Company note | yes | One per company (red dot), e.g. "raising at $28.8B". It also survives archiving. |
+| Posted | yes | Date the deal came in (stored as `received`). This drives the age line: black for 0 to 10 days, grey after. |
 | Highlight | yes | Pins the deal to the top as a card |
 | Hidden | no | The deal is kept in the sheet but not shown to partners |
 | Source | **never** | Who sent it: person, firm, thread |
@@ -43,28 +44,46 @@ Behind it is a simple spreadsheet-style back office where Elen adds, edits and a
 
 Private fields are removed on the server. They are never sent to a partner's browser in any form.
 
-## 4. Partner page
+## 4. Partner page (v2, Nov 14)
 
-- **Two tabs:** "available" (supply) and "buyers looking for" (demand), plus sector filters and search.
-- **Highlighted** deals appear first, as black cards.
-- **Deals grouped by company**, so Shield AI's three offers sit together. The company note appears under the company name.
-- **Age indicator on every deal**, measured in days since received (New York time):
+- **Header:** "deal sheet." on the left, with a **business card** on the right:
+  - Elena Kareva, Managing Partner @ prophet.partners, Registered Representative @ Rainmaker Securities
+  - email, with a copy button
+  - phone
+  - a "book a call" meeting link, shown when `BOOKING_URL` is set
+- **One page, two sections**, with no tabs:
+  1. **Supply** (available allocations): highlighted cards first, then all available deals grouped by company.
+  2. **Demand** (buyers looking for): grouped by company.
 
-  | Age | Display |
-  |---|---|
-  | 0 to 7 days | black marker, "received 3d ago" |
-  | 8 to 21 days | red marker, "check availability" |
-  | over 21 days | greyed out, "may be inactive" |
+  Sector filters and search apply to both sections.
+- **Highlighted cards:** any number of them, flowing onto more rows as needed. No date shown. The **email** and **call** buttons sit at the bottom of each card.
+- **Company header:** name and sector, then the one-line **description** (black dot), then the **company note** (red dot).
+- **Each deal row:**
+  - structure, size, price, fees, min
+  - "posted Xd ago"
+  - **email** and **call** buttons
+  - the deal note, if there is one
 
-  Nothing hides automatically. Archiving is Elen's call.
-- **Contact options:**
-  - **On every deal:** **email** and **WhatsApp** buttons, each pre-filled with the deal's details.
-  - **In the header:** **email**, **call**, **WhatsApp** and **book a call**. "Book a call" only appears once a booking link is set.
-  - **Tracking:** every click is logged, so Elen sees which deals draw interest.
-- **Footer:** the full Rainmaker / prophet.partners disclosure.
-- **Not indexed** by search engines.
+  There are no WhatsApp buttons on the partner page.
+- **Age:** a black line for deals posted within the last 10 days and a grey line after that. Age has no red and no warning labels.
+- **Footer:** the full disclosure provided by Elen (RMS, the prophet.partners relationship, "illustrative purposes" language).
+- **Phones:** the header stacks, cards span the full width, buttons are full width, and the search box is on top.
 
 ## 5. Admin (the spreadsheet)
+
+**Company memory:**
+- Company description and note live in a company table, so archiving a deal never loses them.
+- When a new deal gets a company name used before, it reuses the existing spelling ("shield ai" becomes "Shield AI") and the last sector.
+
+**Deal card:** click the age › to open a full edit form with:
+- every deal field
+- the company fields
+- private fields
+- buttons to archive and to mark posted today
+- the people on the deal, and who has access to it or is looking for it
+
+On a phone, deals appear as cards that open this form.
+
 
 - **Layout:** one grid, one row per deal and one column per field. **Click any cell to edit it.** It saves on its own when you click away, and a small "saved" confirmation appears.
 - **Adding:** "+ add deal" puts an empty row at the top. "Received" defaults to today.
@@ -81,30 +100,43 @@ Private fields are removed on the server. They are never sent to a partner's bro
   - clicks per deal (email, WhatsApp, call, book)
   - recent activity
 
-## 5b. CRM (private, admin only)
+## 5b. CRM (private, admin only), v2 co-designed Nov 14
 
-The CRM is deliberately lightweight. It lives in the same database as the deals, and **nothing in it is ever sent to the partner page**.
+The CRM is lightweight and lives in the same database as the deals. **Nothing in it is ever sent to the partner page.**
 
-**Who goes in:** only people tied to a deal, or people Elen adds herself. The agent will never add everyone from the inbox.
+**Main uses:**
+- When a deal comes in: **who could buy it?**
+- When a buyer asks for something: **who has direct access to it?**
 
-| Record | Fields |
+**Who goes in:** only people tied to a deal, or people Elen adds herself. No imports yet; that's a later step.
+
+| Column | Notes |
 |---|---|
-| **Contact** | name, firm, type (buyer, seller, broker, sponsor, other), email, phone, WhatsApp, notes / buy criteria (free text), follow-up date and note, last contact (automatic, from the timeline), number of deals |
-| **Deal link** | contact ↔ deal, with a role: brought it to me, co-broker, sent it to, interested, passed, or IOI (with an amount). One role per person per deal, and the role can be changed. |
-| **Timeline entry** | date, channel (email, call, meeting, WhatsApp, note), summary, optional deal, link to the source (Gmail thread or Granola note), added by Elen or by the agent |
+| Name, Firm | |
+| Type | Multiple choice: Fund, SPV, FO, Broker, Introducer, Buy side, Sell side |
+| Email, Phone | Phone is also used for the WhatsApp link |
+| Direct access to | Company names, comma separated, with suggestions taken from the deal list |
+| Looking for | Company names, comma separated. The mirror of "direct access to", so buyers and sellers can be matched. |
+| Notes | A dated log from calls and emails, newest first, e.g. `2026-11-14 · call · Lightmatter: wants it under $80 (link)`. The agent adds lines here. |
+| Personal notes | Family, interests, where you met. Elen writes these; the agent may add details from small talk. |
+| Birthday | Day and month only, typed as "Mar 14", "14 Mar" or "3/14". No reminders. |
+| Deals | Number of deals the person is linked to |
 
-**Admin screens**
-- **Contacts tab:** a spreadsheet of people. Click to edit. Rows are sorted by follow-up date, and due follow-ups show in red. Archive, restore or delete.
-- **Deal panel:** click a deal's age (›) to see who is on the deal and in what role. You can add someone already in your contacts, or create a new contact on the spot, and log timeline entries.
-- **Contact panel:** click › on a contact to see:
-  - quick email, call and WhatsApp links
-  - follow-up and notes
-  - every deal they're on, with their role
-  - their full timeline
-- **Exports:** deals CSV and contacts CSV, including each contact's deal list.
-- **History:** every CRM change is logged.
+Removed in v2: WhatsApp (phone is used instead), follow-up fields (follow-ups move to the agent's morning brief), last contact.
 
-**Agent (phase 2):** the agent writes contacts, links and timeline entries through the same functions, marked "agent". New deals it finds arrive hidden, for Elen to review.
+**Screens**
+- **Contacts tab:** spreadsheet editing. One search box covers name, firm, type, access, looking for and notes, plus a filter by type.
+- **Contact card:** opened with › on desktop, or by tapping on phone. It shows quick call, WhatsApp and email links, every field, a quick "add note" box (dated, with an optional deal and link), personal notes, birthday, and their deals with roles. Tapping a company chip finds everyone else who has it.
+- **Deal panel:** opened by clicking a deal's age ›. It shows:
+  - who is on the deal and their role (brought it to me, co-broker, sent it to, interested, passed, IOI with an amount)
+  - **who has direct access to this company** and **who is looking for it**, each with a one-click add
+  - a box to log a note, which goes into that person's Notes, tagged with the company
+- **Mobile:** contacts appear as cards, and the contact card opens full screen.
+
+**Agent permissions (phase 2)**
+- **May add:** new people from deal emails and calls, lines in Notes, companies in "direct access to" and "looking for", personal details from small talk.
+- **Never:** change Type, or delete anything.
+- **Follow-ups:** handled in the morning brief, not stored in the CRM.
 
 ## 6. Getting deals in
 

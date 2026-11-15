@@ -96,7 +96,7 @@ h2{font-size:12px;font-weight:600;text-transform:lowercase;margin:30px 0 8px;dis
 table{border-collapse:collapse;border:1px solid #e6e6e6;width:100%;max-width:960px}td,th{padding:7px 10px;border-bottom:1px solid #f0f0f0;text-align:left;font-variant-numeric:tabular-nums}th{font-size:11px;color:#767676;font-weight:500;text-transform:lowercase}p{color:#767676}</style></head><body>
 <a href="/admin/">← deals admin</a><h1>stats</h1><p>New York time. Names are what visitors typed when signing in.</p>
 <h2>visitors</h2><table><tr><th>name</th><th>last seen</th><th>page views</th><th>contact clicks</th></tr>${s.people.map((p) => tr([p.name, time(p.last), p.views, p.clicks])).join("") || "<tr><td colspan=4>no visits yet</td></tr>"}</table>
-<h2>interest by deal</h2><table><tr><th>deal</th><th>email</th><th>whatsapp</th><th>total</th></tr>${s.deals.map((d) => tr([d.company ? `${d.company} · ${d.structure || ""}` : `${d.deal} (deleted)`, d.email, d.whatsapp, d.total])).join("") || "<tr><td colspan=4>no clicks yet</td></tr>"}</table>
+<h2>interest by deal</h2><table><tr><th>deal</th><th>email</th><th>call</th><th>total</th></tr>${s.deals.map((d) => tr([d.company ? `${d.company} · ${d.structure || ""}` : `${d.deal} (deleted)`, d.email, d.calls, d.total])).join("") || "<tr><td colspan=4>no clicks yet</td></tr>"}</table>
 <h2>general contact clicks (header)</h2><table><tr><th>type</th><th>clicks</th></tr>${s.general.map((g) => tr([label[g.type] || g.type, g.n])).join("") || "<tr><td colspan=2>none yet</td></tr>"}</table>
 <h2>recent activity</h2><table><tr><th>time</th><th>name</th><th>event</th><th>deal</th><th>location</th></tr>${s.recent.map((r) => tr([time(r.t), r.name || "(no name)", label[r.type] || r.type, r.company || "", [r.city, r.country].filter(Boolean).join(", ")])).join("")}</table>
 </body></html>`);
@@ -131,9 +131,9 @@ async function adminApi(request, url, db) {
     if (route === "contact-bulk") return json({ count: await crm.bulkContacts(db, body.ids, String(body.action)) });
     if (route === "link") return json(await crm.upsertLink(db, body));
     if (route === "link-delete") return json(await crm.deleteLink(db, Number(body.id)));
-    if (route === "interaction") return json(await crm.addInteraction(db, body));
-    if (route === "interaction-delete") return json(await crm.deleteInteraction(db, Number(body.id)));
+    if (route === "note") return json(await crm.appendNote(db, body));
     if (route === "company-note") return json(await data.setCompanyNote(db, body.company, body.note));
+    if (route === "company") return json(await data.setCompany(db, body.company, String(body.field), body.value));
     if (route === "bulk") return json({ count: await data.bulk(db, body.ids, String(body.action)) });
   } catch (e) {
     return json({ error: e.message || "Save failed" }, 400);

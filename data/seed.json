@@ -702,5 +702,10 @@
  },
  "companyNotes": {
   "Shield AI": "Reportedly in talks to raise at a $28.8B valuation (last round Mar'26 at $12.6B)."
+ },
+ "companyDescriptions": {
+  "Shield AI": "AI pilot software and autonomous aircraft for defense.",
+  "Lightmatter": "Photonic computing and optical interconnect for AI data centers.",
+  "Multiverse Computing": "Quantum-inspired compression for large language models."
  }
 }

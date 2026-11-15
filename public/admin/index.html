@@ -194,6 +194,7 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
     <button class="btn primary" id="c-add">+ add contact</button>
     <input id="cq" type="search" placeholder="search name, firm, type, access, looking for, notes" style="min-width:300px;flex:1;max-width:460px">
     <select id="c-type"><option value="">all types</option></select>
+    <select id="c-access"><option value="">all access</option><option value="requested">requests</option><option value="approved">approved</option><option value="declined">declined</option><option value="weekly">weekly list</option></select>
     <select id="c-arch"><option value="0">active</option><option value="1">archived</option></select>
     <button class="btn" id="c-archive" disabled>archive</button>
     <button class="btn" id="c-restore" hidden disabled>restore</button>
@@ -201,11 +202,11 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
     <span class="count" id="c-count"></span>
   </div>
   <div class="help desk">Click a cell to edit. Type: click to tick several. Direct access / looking for: company names separated by commas (suggestions come from your deals). Click › for the full card and to add notes.</div>
-  <div class="wrap desk"><table style="min-width:2150px">
+  <div class="wrap desk"><table style="min-width:2330px">
     <thead><tr>
       <th class="chk stick1"><input type="checkbox" id="c-all"></th>
       <th class="stick2" style="width:30px"></th>
-      <th style="width:170px">name</th><th style="width:150px">firm</th><th style="width:170px">type</th><th style="width:190px">email</th>
+      <th style="width:170px">name</th><th style="width:150px">firm</th><th style="width:170px">type</th><th style="width:115px">access</th><th style="width:60px">weekly</th><th style="width:190px">email</th>
       <th style="width:130px">phone</th><th style="width:220px">direct access to</th><th style="width:220px">looking for</th>
       <th style="width:300px">notes</th><th style="width:220px" class="priv">personal notes</th><th style="width:90px">birthday</th><th style="width:55px">deals</th>
     </tr></thead>
@@ -438,7 +439,8 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
   }
   function cVisible() {
     const q = $("#cq").value.trim().toLowerCase(), t = $("#c-type").value;
-    return contacts.filter((c) => (!t || tags(c.types).includes(t)) && (!q || [c.name, c.firm, c.types, c.email, c.directAccess, c.lookingFor, c.notes].join(" ").toLowerCase().includes(q)));
+    const ac = $("#c-access").value;
+    return contacts.filter((c) => (!ac || (ac === "weekly" ? c.weekly === "1" && c.access === "approved" : c.access === ac)) && (!t || tags(c.types).includes(t)) && (!q || [c.name, c.firm, c.types, c.email, c.directAccess, c.lookingFor, c.notes].join(" ").toLowerCase().includes(q)));
   }
   const typeBox = (c) => `<details class="ms" data-types="${esc(c.id)}"><summary>${esc(c.types) || '<span class="muted">pick…</span>'}</summary><div class="opts">${TYPES.map((t) => `<label><input type="checkbox" value="${esc(t)}" ${tags(c.types).includes(t) ? "checked" : ""}> ${esc(t)}</label>`).join("")}</div></details>`;
   const cIn = (c, f, kind) => {
@@ -451,9 +453,12 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
     $("#c-rows").innerHTML = list.length ? list.map((c) => `<tr class="${cSelected.has(c.id) ? "sel" : ""}">
       <td class="chk stick1"><input type="checkbox" data-csel="${esc(c.id)}" ${cSelected.has(c.id) ? "checked" : ""}></td>
       <td class="open-c stick2"><button data-open-contact="${esc(c.id)}" title="open card">›</button></td>
-      ${cIn(c, "name")}${cIn(c, "firm")}<td>${typeBox(c)}</td>${cIn(c, "email")}${cIn(c, "phone")}
+      ${cIn(c, "name")}${cIn(c, "firm")}<td>${typeBox(c)}</td>
+      <td class="${c.access === "requested" ? "due" : ""}"><select data-cid="${esc(c.id)}" data-cfield="access">${["", "requested", "approved", "declined"].map((a) => `<option value="${a}" ${a === (c.access || "") ? "selected" : ""}>${a || "—"}</option>`).join("")}</select></td>
+      <td class="bool"><input type="checkbox" data-cid="${esc(c.id)}" data-cfield="weekly" ${c.weekly === "1" ? "checked" : ""}></td>
+      ${cIn(c, "email")}${cIn(c, "phone")}
       ${cIn(c, "directAccess", "tags")}${cIn(c, "lookingFor", "tags")}${cIn(c, "notes", "area")}${cIn(c, "personalNotes", "area")}${cIn(c, "birthday")}
-      <td class="ro">${c.dealCount || ""}</td></tr>`).join("") : `<tr><td colspan="13" class="empty">${arch ? "nothing archived." : "no contacts yet. click + add contact, or add people from a deal (click its age ›)."}</td></tr>`;
+      <td class="ro">${c.dealCount || ""}</td></tr>`).join("") : `<tr><td colspan="15" class="empty">${arch ? "nothing archived." : "no contacts yet. click + add contact, or add people from a deal (click its age ›)."}</td></tr>`;
     $("#c-cards").innerHTML = list.map((c) => `<div class="card" data-open-contact="${esc(c.id)}">
       <div><span class="nm">${esc(c.name || "(no name)")}</span><span class="fm">${esc(c.firm)}</span></div>
       ${c.types ? `<div class="chips" style="margin-top:6px">${tags(c.types).map((t) => `<span class="chip t">${esc(t)}</span>`).join("")}</div>` : ""}
@@ -461,6 +466,8 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
       ${c.lookingFor ? `<div class="ln"><b>looking for</b>${esc(c.lookingFor)}</div>` : ""}
       <div class="qa">${c.phone ? `<a href="tel:${esc(c.phone)}">call</a><a href="${waLink(c.phone)}" target="_blank" rel="noopener">whatsapp</a>` : ""}${c.email ? `<a href="mailto:${esc(c.email)}">email</a>` : ""}</div>
     </div>`).join("") || `<p class="muted">${arch ? "nothing archived." : "no contacts yet."}</p>`;
+    const reqs = contacts.filter((c) => c.access === "requested").length;
+    document.querySelector('[data-view="contacts"]').textContent = reqs ? `contacts (${reqs} new)` : "contacts";
     $("#c-count").textContent = `${list.length === contacts.length ? contacts.length : `${list.length} of ${contacts.length}`} ${arch ? "archived" : "contacts"}`;
     for (const id of ["#c-archive", "#c-restore", "#c-delete"]) $(id).disabled = !cSelected.size;
     $("#c-archive").hidden = arch; $("#c-restore").hidden = $("#c-delete").hidden = !arch; $("#c-add").hidden = arch;
@@ -575,6 +582,12 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
         <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">
           ${f("name", "name")}${f("firm", "firm")}${f("email", "email", 'type="email" inputmode="email"')}${f("phone", "phone (also used for whatsapp)", 'type="tel"')}
         </div>
+        <div class="field"><label>access to the deal sheet</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <strong style="${c.access === "requested" ? "color:var(--red)" : ""}">${esc(c.access || "none")}</strong>
+          ${c.access !== "approved" ? `<a class="btn" href="/admin/approve?id=${encodeURIComponent(c.id)}" target="_blank" rel="noopener" style="text-decoration:none">approve + email password</a>` : `<a class="btn" href="/admin/approve?id=${encodeURIComponent(c.id)}" target="_blank" rel="noopener" style="text-decoration:none">resend welcome email</a>`}
+          ${c.access === "requested" ? `<a class="btn" href="/admin/decline?id=${encodeURIComponent(c.id)}" target="_blank" rel="noopener" style="text-decoration:none">decline</a>` : ""}
+          <label style="display:flex;gap:6px;align-items:center;font-size:13px;color:var(--ink);margin-left:6px"><input type="checkbox" id="d-weekly" ${c.weekly === "1" ? "checked" : ""}> weekly deal sheet</label>
+        </div><div class="muted" style="font-size:12px;margin-top:4px">${c.accredited ? `accredited (self-certified ${esc(c.accredited)})` : "not certified accredited"} · source: ${esc(c.source || "manual")}</div></div>
         <div class="field"><label>type</label><div class="chips" id="d-types">${TYPES.map((t) => `<label class="chip" style="cursor:pointer"><input type="checkbox" value="${esc(t)}" ${tags(c.types).includes(t) ? "checked" : ""} style="margin:0 4px 0 0">${esc(t)}</label>`).join("")}</div></div>
         ${f("directAccess", "direct access to (companies, comma separated)", 'data-tags list="dl-tags" autocomplete="off"')}
         ${tags(c.directAccess).length ? `<div class="chips" style="margin-top:6px">${tags(c.directAccess).map((t) => `<button class="chip" data-search="${esc(t)}" title="who else has this?">${esc(t)}</button>`).join("")}</div>` : ""}
@@ -640,6 +653,11 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
     const el = e.target;
     if (el.dataset.csel !== undefined) { el.checked ? cSelected.add(el.dataset.csel) : cSelected.delete(el.dataset.csel); renderContacts(); return; }
     if (el.id === "c-all") { for (const c of cVisible()) el.checked ? cSelected.add(c.id) : cSelected.delete(c.id); renderContacts(); return; }
+    if (el.dataset.cfield && (el.tagName === "SELECT" || el.type === "checkbox")) {
+      const fresh = await saveContactField(el.dataset.cid, el.dataset.cfield, el.type === "checkbox" ? (el.checked ? "1" : "") : el.value, el);
+      if (fresh && el.dataset.cfield === "access") renderContacts();
+      return;
+    }
     const ms = el.closest("details.ms");
     if (ms) {
       const picked = [...ms.querySelectorAll("input:checked")].map((i) => i.value);
@@ -647,6 +665,7 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
       if (fresh) ms.querySelector("summary").innerHTML = esc(fresh.types) || '<span class="muted">pick…</span>';
       return;
     }
+    if (el.id === "d-weekly") { await saveContactField(drawer.id, "weekly", el.checked ? "1" : ""); return; }
     if (el.closest("#d-types")) {
       const picked = [...document.querySelectorAll("#d-types input:checked")].map((i) => i.value);
       const fresh = await saveContactField(drawer.id, "types", picked.join(", "));
@@ -661,7 +680,7 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
   });
   document.addEventListener("focusout", (e) => {
     const el = e.target; if (!el.dataset) return;
-    if (el.dataset.cfield) { el.scrollTop = 0; saveContactField(el.dataset.cid, el.dataset.cfield, el.value, el); }
+    if (el.dataset.cfield && (el.type === "text" || el.tagName === "TEXTAREA")) { el.scrollTop = 0; saveContactField(el.dataset.cid, el.dataset.cfield, el.value, el); }
     if (el.dataset.df && drawer) saveContactField(drawer.id, el.dataset.df, el.value, el).then((fresh) => {
       if (fresh && ["directAccess", "lookingFor"].includes(el.dataset.df)) reopen();
     });
@@ -681,10 +700,15 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
   $("#c-archive").onclick = () => cBulk("archive");
   $("#c-restore").onclick = () => cBulk("restore");
   $("#c-delete").onclick = () => cBulk("delete", "Permanently delete {n} contact(s) and their deal links? This can't be undone.");
-  for (const id of ["#cq", "#c-type"]) $(id).addEventListener("input", renderContacts);
+  for (const id of ["#cq", "#c-type", "#c-access"]) $(id).addEventListener("input", renderContacts);
   $("#c-arch").addEventListener("change", loadContacts);
   $("#d-close").onclick = closeDrawer; $("#scrim").onclick = closeDrawer;
 
+  if (location.hash.startsWith("#contact=")) {
+    const id = decodeURIComponent(location.hash.slice(9));
+    setTimeout(() => { document.querySelector('[data-view="contacts"]').click(); openContact(id); history.replaceState(null, "", "/admin/"); }, 300);
+  }
+  refreshLookups().then(() => api("contacts")).then((j) => { const n = j.contacts.filter((c) => c.access === "requested").length; if (n) document.querySelector('[data-view="contacts"]').textContent = `contacts (${n} new)`; }).catch(() => {});
   load();
 })();
 </script>

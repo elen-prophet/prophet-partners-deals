@@ -26,7 +26,9 @@ SPEC.md                    v1 spec
 4. **Connect the database.** In the project, go to **Settings > Bindings > Add > D1 database**. Set the variable name to **`DB`** and pick `deals-db`.
 5. **Add your settings.** Go to **Settings > Variables and secrets**:
    - Secrets: `DEALS_PASSWORD`, `ADMIN_PASSWORD`, `COOKIE_SECRET` (any long random string)
-   - Optional plain text: `BOOKING_URL` (e.g. your Calendly link), `CONTACT_EMAIL`, `CONTACT_PHONE`, `CONTACT_WHATSAPP`. Leave these out to use the defaults: elen@prophet.partners and +1 929 259 2077 for both phone and WhatsApp.
+   - Optional plain text: `BOOKING_URL` (e.g. your Calendly link), `CONTACT_EMAIL`, `CONTACT_PHONE`. Defaults: elen@prophet.partners and +1 929 259 2077.
+   - Request form: `FORMSPREE_ID` (default `xdavpopa`, the main site form) and `PUBLIC_URL` (default: the site's own address, e.g. https://deals.prophet.partners). Both are optional.
+   - Optional "are you human" check (Cloudflare Turnstile, free): `TURNSTILE_SITEKEY` (text) and `TURNSTILE_SECRET` (secret). The form works without them, using the honeypot and rate limit.
 6. **Redeploy.** Go to Deployments > ... > Retry deployment.
 7. **Add the domain.** Go to Custom domains > `deals.prophet.partners`.
 8. **Check it:**
@@ -58,3 +60,13 @@ The partner page disclosure is in `public/index.html`, inside `<footer id="discl
 npm install
 npm run dev     # partner password: test, admin password: adm
 ```
+
+## Access requests (login page + prophet.partners)
+
+- **The form:** both the login page and the main site's contact form send to `/api/request`.
+- **Where requests go:**
+  - Each one creates or updates a contact in the CRM with source "website (deal sheet)" or "website (main site)" and access **requested**.
+  - The "You are" choice sets the type, and the message is added to Notes.
+- **Notification:** Formspree emails you an "Approve" link. It opens `/admin/approve?id=…`, marks the person approved, and opens a ready-to-send welcome email with the link and password.
+- **Accredited checkbox:** required for Fund, Syndicate, Family office and Investor, both in the browser and on the server.
+- **Spam protection:** a hidden honeypot field, 5 requests per hour per connection, and the optional Turnstile check.

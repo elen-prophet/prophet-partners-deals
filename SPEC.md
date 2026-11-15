@@ -69,6 +69,31 @@ Private fields are removed on the server. They are never sent to a partner's bro
 - **Footer:** the full disclosure provided by Elen (RMS, the prophet.partners relationship, "illustrative purposes" language).
 - **Phones:** the header stacks, cards span the full width, buttons are full width, and the search box is on top.
 
+## 4b. Login page and access requests (Nov 15)
+
+- **Login page:**
+  - prophet.partners logo and "deal sheet."
+  - "Pre-IPO tech allocations. Confidential."
+  - Teaser: "**N** live allocations · top 4 sectors · updated daily". N is counted from live supply deals each time the page loads; no names or terms are shown.
+  - Credibility line with a BrokerCheck link.
+  - Password-only sign in (no name field, so stats show visits by city only).
+  - The request form, and the full disclosure.
+- **Request form, shared with the main site's contact section:**
+  - Fields: name, email (required), firm, "You are…" (Fund · Syndicate · Family office · Investor · Shareholder · Broker · Something else), message, an accredited checkbox, and a weekly deal sheet checkbox.
+  - The accredited checkbox is **required** for Fund, Syndicate, Family office and Investor.
+  - Confirmation: "Thanks, we will be in touch."
+- **On submit:**
+  - The person is created in the CRM, or updated if the email already exists. They are never downgraded if already approved.
+  - Types map as follows: Fund → Fund, Syndicate → SPV, Family office → FO, Investor → Buy side, Shareholder → Sell side, Broker → Broker.
+  - The message becomes a dated line in Notes.
+  - Access is set to **requested**, with weekly and the accredited date saved.
+- **Notification:** sent by email through Formspree (form `xdavpopa`) with **Approve** and **Open in CRM** links. Replying to it goes to the requester.
+- **Approving:**
+  - One tap marks the person approved and opens the welcome email, prefilled with the link and password.
+  - Decline is available in the contact card.
+  - In the admin: access and weekly columns, filters for requests, approved, declined and the weekly list, and a "contacts (N new)" badge.
+- **Public email:** none on the public pages. Only the phone is shown. elen@ appears only behind the password.
+
 ## 5. Admin (the spreadsheet)
 
 **Company memory:**

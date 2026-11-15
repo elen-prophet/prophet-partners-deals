@@ -139,12 +139,29 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
   .dh{padding:14px}.db{padding:4px 14px 60px}
   .field input,.field textarea,.field select{font-size:16px}
 }
+.ibx{padding:16px 20px 60px;max-width:980px}
+.brief{border:1px solid var(--ink);padding:16px 20px;margin-bottom:22px}
+.brief h3{font-size:12px;font-weight:600;text-transform:lowercase;margin:16px 0 6px;display:flex;gap:8px;align-items:center}.brief h3::before{content:"";width:7px;height:7px;background:var(--red)}
+.brief .when{color:var(--muted);font-size:12px}
+.brief ul{margin:4px 0 0;padding-left:18px}.brief li{margin:3px 0}.brief p{margin:6px 0}
+.igroup h2{font-size:15px;font-weight:700;margin:22px 0 8px;display:flex;gap:8px;align-items:baseline}.igroup h2 small{color:var(--muted);font-weight:400;font-size:12px}
+.icard{border:1px solid var(--line);border-left:3px solid var(--ink);padding:12px 14px;margin-bottom:8px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+.icard .ti{font-weight:700}.icard .ti small{font-weight:400;color:var(--muted);margin-left:6px}
+.icard .sm{font-size:12.5px;color:var(--ink2);margin-top:3px}
+.icard .src{font-size:12px;color:var(--muted);margin-top:4px}.icard .src a{color:var(--muted)}
+.icard .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.diff{font-size:12.5px;margin-top:5px}.diff s{color:var(--muted)}.diff b{color:var(--red);font-weight:600}
+.recent{margin-top:26px;color:var(--muted)}.recent ul{list-style:none;padding:0;margin:8px 0 0;font-size:12.5px}.recent li{padding:4px 0;border-bottom:1px solid var(--line)}
+.recent .err{color:var(--red)}
+.empty-ibx{color:var(--muted);padding:12px 0}
+@media (max-width:760px){.ibx{padding:12px}.icard{grid-template-columns:1fr}.icard .acts{justify-content:flex-start}}
 </style>
 </head>
 <body>
 <div class="top">
   <h1>prophet<span>.</span>partners <small>/ deals</small></h1>
   <div class="tabs" role="group">
+    <button data-view="inbox" aria-pressed="false">inbox</button>
     <button data-view="live" aria-pressed="true">deals</button>
     <button data-view="contacts" aria-pressed="false">contacts</button>
     <button data-view="archived" aria-pressed="false">archived</button>
@@ -186,6 +203,13 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
     </tr></thead>
     <tbody id="rows"></tbody>
   </table></div>
+</div>
+<div id="inbox-view" hidden>
+  <div class="ibx">
+    <section class="brief" id="brief"></section>
+    <div id="ibx-items"></div>
+    <details class="recent"><summary>recent agent activity</summary><ul id="ibx-recent"></ul></details>
+  </div>
 </div>
 <div id="history-view" hidden><ul class="history" id="history"></ul></div>
 
@@ -381,11 +405,11 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
     if (!v) return;
     view = v.dataset.view;
     document.querySelectorAll("[data-view]").forEach((b) => b.setAttribute("aria-pressed", b === v));
-    $("#sheet-view").hidden = view === "history" || view === "contacts"; $("#history-view").hidden = view !== "history"; $("#contacts-view").hidden = view !== "contacts";
+    $("#sheet-view").hidden = ["history", "contacts", "inbox"].includes(view); $("#history-view").hidden = view !== "history"; $("#contacts-view").hidden = view !== "contacts"; $("#inbox-view").hidden = view !== "inbox";
     document.querySelectorAll("[data-live]").forEach((b) => (b.hidden = view !== "live"));
     document.querySelectorAll("[data-arch]").forEach((b) => (b.hidden = view !== "archived"));
     $("#add").hidden = view !== "live";
-    if (view === "history") loadHistory(); else if (view === "contacts") loadContacts(); else load();
+    if (view === "history") loadHistory(); else if (view === "contacts") loadContacts(); else if (view === "inbox") loadInbox(); else load();
   });
   $("#add").onclick = async () => {
     status("adding…");
@@ -703,6 +727,65 @@ button.chip{background:#fff;cursor:pointer;font:inherit;font-size:11.5px}button.
   for (const id of ["#cq", "#c-type", "#c-access"]) $(id).addEventListener("input", renderContacts);
   $("#c-arch").addEventListener("change", loadContacts);
   $("#d-close").onclick = closeDrawer; $("#scrim").onclick = closeDrawer;
+
+  // ================= INBOX (agent) =================
+  function mdLite(t) {
+    const out = []; let inList = false;
+    for (const raw of String(t || "").split("\n")) {
+      const line = esc(raw).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/(https?:\/\/[^\s<)]+)/g, '<a href="$1" target="_blank" rel="noopener">link ↗</a>');
+      if (/^#{1,3}\s/.test(raw)) { if (inList) { out.push("</ul>"); inList = false; } out.push(`<h3>${line.replace(/^#{1,3}\s/, "")}</h3>`); }
+      else if (/^\s*[-*]\s/.test(raw)) { if (!inList) { out.push("<ul>"); inList = true; } out.push(`<li>${line.replace(/^\s*[-*]\s/, "")}</li>`); }
+      else if (raw.trim()) { if (inList) { out.push("</ul>"); inList = false; } out.push(`<p>${line}</p>`); }
+    }
+    if (inList) out.push("</ul>");
+    return out.join("");
+  }
+  const GROUPS = [
+    ["new_deal", "new deals", "added hidden. publish to show partners"],
+    ["deal_update", "term changes", "new terms seen in email or calls"],
+    ["match", "possible matches", "people looking for what just came in"],
+    ["archive_suggest", "archive suggestions", "no recent mentions"],
+  ];
+  async function loadInbox() {
+    status("loading…");
+    try {
+      const j = await api("inbox");
+      const r = j.run;
+      $("#brief").innerHTML = r ? `<div class="when">daily brief · ${new Date(r.t).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</div>${mdLite(r.brief)}`
+        : `<div class="when">daily brief</div><p class="muted">No brief yet. The agent writes one here each morning.</p>`;
+      const by = (k) => j.pending.filter((i) => i.kind === k);
+      let html = j.requests ? `<div class="igroup"><h2>website requests <small>${j.requests} waiting for approval</small></h2><div class="icard"><div><div class="ti">${j.requests} access request${j.requests > 1 ? "s" : ""}</div><div class="sm">approve from the contact card or the notification email</div></div><div class="acts"><button class="btn" data-goto-requests>open requests</button></div></div></div>` : "";
+      for (const [k, title, sub] of GROUPS) {
+        const items = by(k); if (!items.length) continue;
+        html += `<div class="igroup"><h2>${title} <small>${items.length} · ${sub}</small></h2>${items.map(card).join("")}</div>`;
+      }
+      $("#ibx-items").innerHTML = html || `<p class="empty-ibx">Nothing waiting. You're all caught up.</p>`;
+      $("#ibx-recent").innerHTML = j.recent.map((i) => `<li class="${i.status === "error" ? "err" : ""}">${esc(new Date(i.t).toLocaleDateString("en-US", { month: "short", day: "numeric" }))} · ${esc(i.kind)} · ${esc(i.summary || "")} → ${esc(i.result || i.status)}</li>`).join("") || "<li>nothing yet</li>";
+      setInboxBadge(j.pending.length + (j.requests || 0));
+      status("");
+    } catch (e) { status(e.message, true); }
+  }
+  function card(i) {
+    let p = {}; try { p = JSON.parse(i.payload || "{}"); } catch (e) {}
+    const src = i.sourceLink ? `<div class="src">source: <a href="${esc(i.sourceLink)}" target="_blank" rel="noopener">${esc(p.source || "open ↗")}</a></div>` : (p.source ? `<div class="src">source: ${esc(p.source)}</div>` : "");
+    const terms = (d) => [d.structure, d.size, d.price, d.fees].filter(Boolean).join(" · ");
+    const btn = (label, action, cls = "") => `<button class="btn ${cls}" data-resolve="${i.id}" data-action="${action}">${label}</button>`;
+    const open = i.dealId ? `<button class="btn" data-open-deal="${esc(i.dealId)}">open</button>` : "";
+    if (i.kind === "new_deal") return `<div class="icard"><div><div class="ti">${esc(i.company || p.company)}<small>${esc(p.side || "supply")}</small></div><div class="sm">${esc(terms(i.company ? i : p))}</div>${i.summary ? `<div class="sm">${esc(i.summary)}</div>` : ""}${i.result ? `<div class="src">${esc(i.result)}</div>` : ""}${src}</div><div class="acts">${btn("publish", "accept", "primary")}${open.replace(">open<", ">edit<")}${btn("dismiss", "dismiss")}</div></div>`;
+    if (i.kind === "deal_update") {
+      const ch = Object.entries(p.changes || {}).map(([k, v]) => `${esc(k)}: <s>${esc(i[k] ?? "")}</s> → <b>${esc(v)}</b>`).join("<br>");
+      return `<div class="icard"><div><div class="ti">${esc(i.company)}<small>${esc(terms(i))}</small></div><div class="diff">${ch}</div>${i.summary ? `<div class="sm">${esc(i.summary)}</div>` : ""}${src}</div><div class="acts">${btn("accept", "accept", "primary")}${open}${btn("reject", "dismiss")}</div></div>`;
+    }
+    if (i.kind === "match") return `<div class="icard"><div><div class="ti">${esc(p.contactName || p.email || "")} ↔ ${esc(i.company)}</div><div class="sm">${esc(i.summary || p.reason || "")}</div>${src}</div><div class="acts">${btn("mark as sent", "accept", "primary")}${open}${btn("dismiss", "dismiss")}</div></div>`;
+    return `<div class="icard"><div><div class="ti">${esc(i.company)}<small>posted ${esc(i.received || "")}</small></div><div class="sm">${esc(i.summary || p.reason || "")}</div>${src}</div><div class="acts">${btn("archive", "accept", "primary")}${open}${btn("keep", "dismiss")}</div></div>`;
+  }
+  function setInboxBadge(n) { document.querySelector('[data-view="inbox"]').textContent = n ? `inbox (${n})` : "inbox"; }
+  document.addEventListener("click", async (e) => {
+    const r = e.target.closest("[data-resolve]");
+    if (r) { r.disabled = true; try { const x = await api("inbox-resolve", { id: r.dataset.resolve, action: r.dataset.action }); await loadInbox(); await load(); status(`${x.result} ✓`); } catch (err) { status(err.message, true); r.disabled = false; } return; }
+    if (e.target.closest("[data-goto-requests]")) { document.querySelector('[data-view="contacts"]').click(); setTimeout(() => { $("#c-access").value = "requested"; renderContacts(); }, 400); }
+  });
+  api("inbox").then((j) => setInboxBadge(j.pending.length + (j.requests || 0))).catch(() => {});
 
   if (location.hash.startsWith("#contact=")) {
     const id = decodeURIComponent(location.hash.slice(9));

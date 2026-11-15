@@ -163,6 +163,19 @@ Removed in v2: WhatsApp (phone is used instead), follow-up fields (follow-ups mo
 - **Never:** change Type, or delete anything.
 - **Follow-ups:** handled in the morning brief, not stored in the CRM.
 
+## 5c. Deal desk agent (v1, Nov 15)
+
+- **What it is:** a scheduled Claude task, every morning around 6:40am New York time, so the brief is ready by 7. It reads Gmail (including the "Rainmaker Deals" label and rrlist) and Granola. The full rules are in `AGENT.md`.
+- **How it reaches the back office:** through the **Cloudflare Developer Platform** connector, against `deals-db`. It only reads, and only inserts rows into `agent_inbox` and `agent_runs`. The back office applies those rows the next time the admin is opened:
+  - **Contacts, notes and deal links:** applied automatically and marked "agent". Types are only ever added, never removed. Personal notes are added on top, never overwritten.
+  - **New deals:** added **hidden**, and you publish, edit or dismiss them in the **Inbox**.
+  - **Duplicates:** same company and identical terms are merged into one deal, with every source listed in its private notes. If terms differ, each offer stays a separate deal.
+  - **Term changes, archive suggestions and matches:** wait in the Inbox for you to accept or reject.
+- **Contact types:** Rainmaker colleagues are **RMS Broker**. Other brokers are **Broker**.
+- **The brief:** saved at the top of the **Inbox** tab, and sent as the task's notification email and push. Sections: Must do today, Follow-ups owed, Waiting on others, New deal flow, Possible matches, Today's meetings, Drafts ready, Needs your input.
+- **What the agent never does:** send email (drafts only), delete anything, change a contact's type, or publish to partners.
+- **Out of v1:** the Friday partner email.
+
 ## 6. Getting deals in
 
 | Source | v1 | Later |

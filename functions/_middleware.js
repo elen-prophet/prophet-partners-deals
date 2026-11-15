@@ -2,6 +2,7 @@
 // Partner password gate, admin (Basic Auth), JSON API, stats. Data in D1 (binding DB).
 import * as data from "../lib/db.js";
 import * as crm from "../lib/crm.js";
+import * as agent from "../lib/agent.js";
 
 const COOKIE = "pp_deals";
 const MAX_AGE = 60 * 60 * 24 * 30;
@@ -270,6 +271,7 @@ async function adminApi(request, url, db) {
   if (request.method === "GET") {
     if (route === "deals") return json(await data.adminDeals(db, url.searchParams.get("archived") === "1"));
     if (route === "history") return json(await data.history(db));
+    if (route === "inbox") return json(await agent.inboxView(db));
     try {
       if (route === "contacts") return json(await crm.listContacts(db, url.searchParams.get("archived") === "1"));
       if (route === "contact") return json(await crm.contactDetail(db, url.searchParams.get("id") || ""));
@@ -291,6 +293,7 @@ async function adminApi(request, url, db) {
     if (route === "update") return json(await data.updateField(db, String(body.id), String(body.field), body.value));
     if (route === "contact-create") return json(await crm.createContact(db, body.fields || {}));
     if (route === "contact-update") return json(await crm.updateContact(db, String(body.id), String(body.field), body.value));
+    if (route === "inbox-resolve") return json(await agent.resolve(db, Number(body.id), String(body.action)));
     if (route === "access") return json(await crm.setAccess(db, String(body.id), String(body.access)));
     if (route === "contact-bulk") return json({ count: await crm.bulkContacts(db, body.ids, String(body.action)) });
     if (route === "link") return json(await crm.upsertLink(db, body));
@@ -321,6 +324,7 @@ export async function onRequest(ctx) {
   const db = env.DB;
   await data.init(db);
   await crm.initCrm(db);
+  await agent.initAgent(db);
 
   // Public request-access form (this site and prophet.partners). Has its own origin check.
   if (url.pathname === "/api/request") return handleRequest(ctx, request, env, url, db);
@@ -333,6 +337,7 @@ export async function onRequest(ctx) {
     if (!(await checkAdmin(request, env))) {
       return new Response("Admin password required", { status: 401, headers: { "WWW-Authenticate": 'Basic realm="prophet-deals-admin", charset="UTF-8"', ...HEADERS } });
     }
+    await agent.processInbox(db).catch((e) => console.log("agent inbox", e.message));
     if (url.pathname.startsWith("/api/admin/")) return adminApi(request, url, db);
     if (url.pathname === "/admin/stats") return statsPage(db);
     if (url.pathname === "/admin/approve") return approvePage(env, url, db, "approve");
